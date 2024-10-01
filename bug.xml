@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<bugrepository name="AspectJ">
+  <bug id="28974" opendate="2003-1-3 10:28:00" fixdate="2003-1-14 14:30:00">
+    <buginformation>
+      <summary>"Compiler error when introducing a ""final"" field"</summary>
+      <description>The aspect below fails to compile with 1.1b2, producing the compilation error: -------------------- $ ajc com/ibm/amc/*.java com/ibm/amc/ejb/*.java d:/eclipse/runtime-workspace-ajsamples/Mock EJBs/com/ibm/amc/DemoBeanEJB.java:1: Cannot assign a value to the final field com.ibm.amc.DemoBean.ajc$interField$co m_ibm_amc$verbose !! no source information available !! 1 error --------------------------- package com.ibm.amc; import com.ibm.amc.ejb.SessionBean; /** * @author colyer * * To change this generated comment edit the template variable "typecomment": * Window&gt;Preferences&gt;Java&gt;Templates. * To enable and disable the creation of type comments go to * Window&gt;Preferences&gt;Java&gt;Code Generation. */ public aspect DemoBeanEJB { declare parents: DemoBean implements SessionBean; // THIS NEXT LINE IS THE CULPRIT static final boolean DemoBean.verbose = true; private transient String DemoBean.ctx; public void DemoBean.ejbActivate( ) { if ( verbose ) { System.out.println( "ejbActivate Called" ); } } } ------------------- Making the inter-type declaration non-final solves the problem...</description>
+    </buginformation>
+    <fixedFiles>
+      <file>org.aspectj/modules/weaver/src/org/aspectj/weaver/AjcMemberMaker.java</file>
+    </fixedFiles>
+  </bug>
+    <bug id="29959" opendate="2003-1-22 7:10:00" fixdate="2003-2-13 16:00:00">
+    <buginformation>
+      <summary>super call in intertype method declaration body causes VerifyError</summary>
+      <description>AspectJ Compiler 1.1beta4 This program: aspect Foo { void A.foo() { } void B.foo() { super.foo(); } } class A { } class B extends A { } class Main { public static void main(String[] args) { new B(); } } causes this error at runtime: Exception in thread "main" java.lang.VerifyError: (class: B, method: ajc$superDispatch$B$foo signature: ()V) Illegal use of nonvirtual function call at Main.main(Foo.java:11) Note that foo is never even called; the error happens at load time when the new B() expression causes class B to be loaded. There's no error if either one of the foo methods is declared in its class directly. This is kind of a showstopper... --Doug</description>
+    </buginformation>
+    <fixedFiles>
+      <file>org.aspectj/modules/org.aspectj.ajdt.core/src/org/aspectj/ajdt/internal/compiler/ast/InterTypeConstructorDeclaration.java</file>
+      <file>org.aspectj/modules/org.aspectj.ajdt.core/src/org/aspectj/ajdt/internal/compiler/ast/SuperFixerVisitor.java</file>
+      <file>org.aspectj/modules/org.aspectj.ajdt.core/src/org/aspectj/ajdt/internal/compiler/lookup/InterTypeMethodBinding.java</file>
+      <file>org.aspectj/modules/tests/bugs/SuperToIntro.java</file>
+    </fixedFiles>
+  </bug>
+</bugrepository>

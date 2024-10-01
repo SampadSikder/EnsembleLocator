@@ -1,0 +1,23 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="buglocator:jar">
+    <output-path>$PROJECT_DIR$/classes</output-path>
+    <root id="archive" name="buglocator.jar">
+      <element id="module-output" name="buglocator" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/wvtool.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/dom4j-1.6.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/args4j-2.0.6.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/lucene-core-2.9.4.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/contenttype-3.2.0-v20060603.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/preferences-3.2.100-v20070522.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/mysql-connector-java-5.1.13-bin.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/org.eclipse.jdt.core_3.4.4.v_894_R34x.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/org.eclipse.text_3.4.0.v20080605-1800.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/org.eclipse.jface_3.4.1.M20080827-2000.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/org.eclipse.core.runtime_3.4.0.v20080512.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/org.eclipse.core.jobs_3.4.1.R34x_v20081128.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/org.eclipse.osgi_3.4.2.R34x_v20080826-1230.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/org.eclipse.core.resources_3.4.2.R34x_v20090126.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/org.eclipse.equinox.common_3.4.0.v20080421-2006.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
