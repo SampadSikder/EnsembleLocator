@@ -105,61 +105,52 @@ public class BugCorpusCreator {
 			InputStream is = new FileInputStream(Property.getInstance().BugFilePath);
 			Document doc = domBuilder.parse(is);
 			Element root = doc.getDocumentElement();
-			NodeList bugRepository = root.getChildNodes();
-			if (bugRepository == null)
-				return list;
+			NodeList tables = root.getElementsByTagName("table");
 
-			for (int i = 0; i < bugRepository.getLength(); i++) {
-				Node bugNode = bugRepository.item(i);
-				if (bugNode.getNodeType() != Node.ELEMENT_NODE)
-					continue;
+			for (int i = 0; i < tables.getLength(); i++) {
+				Element table = (Element) tables.item(i);
+				if ("aspectj".equals(table.getAttribute("name"))) {
+					Bug bug = new Bug();
+					NodeList columns = table.getElementsByTagName("column");
 
-				String bugId = bugNode.getAttributes().getNamedItem("id").getNodeValue();
-				String openDate = bugNode.getAttributes().getNamedItem("opendate").getNodeValue();
-				String fixDate = bugNode.getAttributes().getNamedItem("fixdate").getNodeValue();
+					for (int j = 0; j < columns.getLength(); j++) {
+						Element column = (Element) columns.item(j);
+						String name = column.getAttribute("name");
+						String value = column.getTextContent();
 
-				Bug bug = new Bug();
-				bug.setBugId(bugId);
-				// bug.setOpenDate(makeTime(openDate));
-				// bug.setFixDate(makeTime(fixDate));
-
-				for (Node node = bugNode.getFirstChild(); node != null; node = node.getNextSibling()) {
-					if (node.getNodeType() != Node.ELEMENT_NODE)
-						continue;
-
-					if (node.getNodeName().equals("buginformation")) {
-						NodeList _l = node.getChildNodes();
-						for (int j = 0; j < _l.getLength(); j++) {
-							Node _n = _l.item(j);
-							if (_n.getNodeName().equals("summary")) {
-								String summary = _n.getTextContent();
-								bug.setBugSummary(summary);
-							}
-
-							if (_n.getNodeName().equals("description")) {
-								String description = _n.getTextContent();
-								bug.setBugDescription(description);
-							}
+						switch (name) {
+							case "bug_id":
+								bug.setBugId(value);
+								break;
+							case "summary":
+								bug.setBugSummary(value);
+								break;
+							case "description":
+								bug.setBugDescription(value);
+								break;
+							case "report_time":
+								bug.setOpenDate(makeTime(value));
+								break;
+							case "commit_timestamp":
+								bug.setFixDate(makeTime(value));
+								break;
+							case "files":
+								String[] files = value.split(",");
+								for (String file : files) {
+									bug.addFixedFile(file.trim());
+								}
+								break;
 						}
 					}
-					if (node.getNodeName().equals("fixedFiles")) {
-						NodeList _l = node.getChildNodes();
-						for (int j = 0; j < _l.getLength(); j++) {
-							Node _n = _l.item(j);
-							if (_n.getNodeName().equals("file")) {
-								String fileName = _n.getTextContent();
-								bug.addFixedFile(fileName);
-							}
-						}
-					}
+					list.add(bug);
 				}
-				list.add(bug);
 			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
 		return list;
 	}
+
 
 	/**
 	 * ���� corpus�� ���Ͽ� ���

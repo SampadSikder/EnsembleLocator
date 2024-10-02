@@ -38,7 +38,7 @@ const execCommand = (command)=>{
     
       if (stderr) {
         console.error(`Error: ${stderr}`);
-        reject((stderr));
+        resolve(stdout);
         return;
       }
     
@@ -115,10 +115,15 @@ const findAndReadTxtFiles = async (baseDirectory) => {
 
 // Call the function with your base directory
 const main = async ()=>{
+  try{
   await execCommand(command);
   console.log("Bug locator completed execution");
-
+  
   await findAndReadTxtFiles(workingDir);
+  }catch(error){
+    console.error('An error occurred:', error);
+  }
+
 }
 
 main();

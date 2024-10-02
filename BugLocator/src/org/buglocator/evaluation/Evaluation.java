@@ -17,8 +17,8 @@ public class Evaluation {
 	private int fileCount = Property.getInstance().FileCount;
 	private int bugCount = Property.getInstance().BugReportCount;
 	private float alpha = Property.getInstance().Alpha;
-	private String lineSparator = Property.getInstance().LineSeparator;
-	private String recommandedPath =  Property.getInstance().WorkDir + Property.getInstance().Separator+ "recommended" +Property.getInstance().Separator;
+	private String lineSeparator = Property.getInstance().LineSeparator;
+	private String recommendedPath =  Property.getInstance().WorkDir + Property.getInstance().Separator+ "recommended" +Property.getInstance().Separator;
 
 	Hashtable<String, Integer> idTable = null;
 	Hashtable<Integer, String> nameTable = null;
@@ -30,29 +30,23 @@ public class Evaluation {
 	public Evaluation() {
 		try {
 			this.idTable = getFileId();
-			this.fixTable = getFixLinkTable();
 			this.lenTable = getLenScore();
 			this.nameTable = getClassNames();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-
 	public FileWriter errorWriter = null;
 	public void evaluate() throws IOException {
 		BufferedReader VSMReader = new BufferedReader(new FileReader(this.workDir + "VSMScore.txt"));
-		BufferedReader GraphReader = new BufferedReader(new FileReader(this.workDir + "SimiScore.txt"));
 		errorWriter = new FileWriter(this.workDir + "Evaluator-NoMatch.txt");
 		outputWriter = new FileWriter(this.outputFile);
-		File resultDir = new File(recommandedPath);
-		if (!resultDir.exists()) 
+		File resultDir = new File(recommendedPath);
+		if (!resultDir.exists())
 			resultDir.mkdirs();
-		
-		int ErrorCount = 0;
-		int ErrorBugCount=0;
-		for (int count = 0; count < bugCount; count++)
-		{
-			// Craete VSM vector
+
+		for (int count = 0; count < bugCount; count++) {
+			// Create VSM vector
 			String vsmLine = VSMReader.readLine();
 			String vsmIdStr = vsmLine.substring(0, vsmLine.indexOf(";"));
 			Integer bugID = Integer.parseInt(vsmIdStr);
@@ -67,81 +61,29 @@ public class Evaluation {
 			}
 			vsmVector = normalize(vsmVector);
 
-			// Create Simi vector (VSM°ú id¼ø¼­°¡ °°À½)
-			String graphLine = GraphReader.readLine();
-			// String graphIdStr = graphLine.substring(0,
-			// graphLine.indexOf(";"));
-			// Integer graphId = Integer.parseInt(graphIdStr); //VSM°ú id¼ø¼­°¡ °°¾Æ¼­
-			// »ç¿ëÇÏÁö ¾ÊÀ½
-			String graphVectorStr = graphLine.substring(graphLine.indexOf(";") + 1); // idºÎºĞ
-																						// Á¦°Å
-			float[] graphVector = getVector(graphVectorStr);
-			graphVector = normalize(graphVector);
-
-			// Calculate final Ranking  (This is recommendation process)
-			float[] finalR = combine(vsmVector, graphVector, this.alpha);
-			
-			//Print Evaluation Result 
-			
-			int ret = this.printEvaluationResult(bugID, finalR);
-			if (ret != 0){
-				ErrorCount+= ret;
-				ErrorBugCount++;
-			}
+			// Print Evaluation Result
+			this.printEvaluationResult(bugID, vsmVector);
 		}
 		VSMReader.close();
-		GraphReader.close();
 		errorWriter.close();
 		outputWriter.close();
-		
-		
-		if (ErrorCount!=0)
-			System.err.println("There are "+ErrorCount+" no match files in "+ErrorBugCount + " Bug Reports");
-		
 	}
-	
-	public int printEvaluationResult(Integer _bugID, float[] _finalscore) throws IOException
-	{
-		//Score¿¡ µû¶ó ÆÄÀÏÀÌ Á¤·ÄµÈ °á°ú¸¦ °¡Á®¿È
+	public void printEvaluationResult(Integer _bugID, float[] _finalscore) throws IOException {
+		// Scoreì— ë”°ë¼ ì •ë ¬ëœ ìˆœìœ„ë¥¼ ê°€ì ¸ì˜´
 		Rank[] sortedRank = getSortedRank(_finalscore);
-		
-		int ErrorCount = 0;
-		
-		//Evaluation Part-------------------------------------------------
-		// ¹ö±×¸®Æ÷Æ®¿¡¼­ ¼öÁ¤µÇ¾ú´ø ÆÄÀÏ¸ñ·ÏÀ» ºÒ·¯¿È. (½ÇÁ¦ Á¤´ä ¼Â)
-		TreeSet<String> fileSet = fixTable.get(_bugID);
-		Iterator<String> fileIt = fileSet.iterator();
-		Hashtable<Integer, String> answerIdTable = new Hashtable<Integer, String>();
-		while (fileIt.hasNext()) {
-			String fileName = fileIt.next();
-			Integer fileId = idTable.get(fileName);
-			//¹ö±×¸®Æ÷Æ®¿¡¼­ ¼öÁ¤µÈ ÆÄÀÏÀÌ ½ÇÁ¦ ÄÚµå¿¡¼­´Â ¾ø´Ù¸é ¿¡·¯°¡ ¹ß»ı. (¹öÀüÀÌ ¸ÂÁö ¾Ê´Â °æ¿ì Á¾Á¾ »ı±è)
-			if (fileId==null){
-				errorWriter.write(_bugID + ": This version of source code has no "+ fileName +".... Please check it!\n" );
-				errorWriter.flush();
-				ErrorCount++;
-				continue;
-			}					
-			answerIdTable.put(fileId, fileName);
-		}
-		
-		//Á¤´ä¼Â¿¡ ÀÖ´Â ÆÄÀÏµéÀÌ ¸î¹øÂ°¿¡ ·©Å©µÇ¾ú´ÂÁö °á°ú¸¦ º¸¿©ÁÜ. (writer´Â ÃßÃµµÈ °á°ú ÀüÃ¼¸¦ º¸¿©ÁÜ)
-		FileWriter writer = new FileWriter(recommandedPath + _bugID + ".txt");
+
+		// ê²°ê³¼ë¥¼ íŒŒì¼ì— ê¸°ë¡ (ì¶”ì²œëœ íŒŒì¼ ì „ì²´ë¥¼ ê¸°ë¡í•¨)
+		FileWriter writer = new FileWriter(recommendedPath + _bugID + ".txt");
 		for (int i = 0; i < sortedRank.length; i++) {
 			Rank rank = sortedRank[i];
 			if(nameTable.containsKey(rank.id)) {
-				writer.write(i + "\t" + rank.rank + "\t" + nameTable.get(rank.id) + this.lineSparator);
-			}
-			if ((!answerIdTable.isEmpty()) && (answerIdTable.containsKey(rank.id))) {
-				outputWriter.write(_bugID + "\t" + answerIdTable.get(rank.id) + "\t" + i + "\t" + rank.rank + this.lineSparator);
-				outputWriter.flush();
+				writer.write(i + "\t" + rank.rank + "\t" + nameTable.get(rank.id) + this.lineSeparator);
+				outputWriter.write(_bugID + "\t" + nameTable.get(rank.id) + "\t" + i + "\t" + rank.rank + this.lineSeparator);
 			}
 		}
 		writer.close();
-		
-		return ErrorCount;
+		outputWriter.flush();
 	}
-
 	/**
 	 * 
 	 * @return
@@ -216,6 +158,41 @@ public class Evaluation {
 		return table;
 	}
 
+//	private Rank[] getSortedRank(float[] finalR) {
+//		Rank[] R = new Rank[finalR.length];
+//		for (int i = 0; i < R.length; i++) {
+//			R[i] = new Rank();
+//			R[i].rank = finalR[i];
+//			R[i].id = i;
+//		}
+//		R = insertionSort(R);
+//		return R;
+//	}
+//
+//	private Rank[] insertionSort(Rank[] R) {
+//		for (int i = 0; i < R.length; i++) {
+//			int maxIndex = i;
+//			for (int j = i; j < R.length; j++) {
+//				if (R[j].rank > R[maxIndex].rank) {
+//					maxIndex = j;
+//				}
+//			}
+//			Rank tmpRank = R[i];
+//			R[i] = R[maxIndex];
+//			R[maxIndex] = tmpRank;
+//		}
+//		return R;
+//	}
+
+	public float[] combine(float[] vsmVector, float[] graphVector, float f) {
+		float[] results = new float[this.fileCount];
+		for (int i = 0; i < this.fileCount; i++) {
+			results[i] = (vsmVector[i] * (1.0F - f) + graphVector[i] * f);
+		}
+		return results;
+	}
+
+
 	private Rank[] getSortedRank(float[] finalR) {
 		Rank[] R = new Rank[finalR.length];
 		for (int i = 0; i < R.length; i++) {
@@ -242,14 +219,6 @@ public class Evaluation {
 		return R;
 	}
 
-	public float[] combine(float[] vsmVector, float[] graphVector, float f) {
-		float[] results = new float[this.fileCount];
-		for (int i = 0; i < this.fileCount; i++) {
-			results[i] = (vsmVector[i] * (1.0F - f) + graphVector[i] * f);
-		}
-		return results;
-	}
-
 	private float[] normalize(float[] array) {
 		float max = Float.MIN_VALUE;
 		float min = Float.MAX_VALUE;
@@ -274,13 +243,44 @@ public class Evaluation {
 			String[] singleValues = value.split(":");
 			if (singleValues.length == 2) {
 				int index = Integer.parseInt(singleValues[0]);
-
 				float sim = Float.parseFloat(singleValues[1]);
 				vector[index] = sim;
 			}
 		}
 		return vector;
 	}
+
+//	private float[] normalize(float[] array) {
+//		float max = Float.MIN_VALUE;
+//		float min = Float.MAX_VALUE;
+//		for (int i = 0; i < array.length; i++) {
+//			if (max < array[i])
+//				max = array[i];
+//			if (min > array[i])
+//				min = array[i];
+//		}
+//		float span = max - min;
+//		for (int i = 0; i < array.length; i++) {
+//			array[i] = ((array[i] - min) / span);
+//		}
+//		return array;
+//	}
+
+//	private float[] getVector(String vectorStr) {
+//		float[] vector = new float[this.fileCount];
+//		String[] values = vectorStr.split(" ");
+//
+//		for (String value : values) {
+//			String[] singleValues = value.split(":");
+//			if (singleValues.length == 2) {
+//				int index = Integer.parseInt(singleValues[0]);
+//
+//				float sim = Float.parseFloat(singleValues[1]);
+//				vector[index] = sim;
+//			}
+//		}
+//		return vector;
+//	}
 
 	private Hashtable<String, Double> getLenScore() throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(this.workDir + "LengthScore.txt"));

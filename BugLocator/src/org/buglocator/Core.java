@@ -55,14 +55,14 @@ public class Core
 
 		}
 		
-		try
-		{
-			System.out.println("compute SimiScore...");
-			new SimilarityDistribution().distribute();
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			return;
-		}
+//		try
+//		{
+//			System.out.println("compute SimiScore...");
+//			new SimilarityDistribution().distribute();
+//		} catch (Exception ex) {
+//			ex.printStackTrace();
+//			return;
+//		}
 		
 		try
 		{
