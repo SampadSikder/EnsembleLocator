@@ -1,5 +1,0 @@
-28974	org.aspectj/modules/weaver/src/org/aspectj/weaver/AjcMemberMaker.java
-29959	org.aspectj/modules/org.aspectj.ajdt.core/src/org/aspectj/ajdt/internal/compiler/ast/InterTypeConstructorDeclaration.java
-29959	org.aspectj/modules/org.aspectj.ajdt.core/src/org/aspectj/ajdt/internal/compiler/ast/SuperFixerVisitor.java
-29959	org.aspectj/modules/org.aspectj.ajdt.core/src/org/aspectj/ajdt/internal/compiler/lookup/InterTypeMethodBinding.java
-29959	org.aspectj/modules/tests/bugs/SuperToIntro.java

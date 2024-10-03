@@ -32,6 +32,7 @@ public class Evaluation {
 			this.idTable = getFileId();
 			this.lenTable = getLenScore();
 			this.nameTable = getClassNames();
+			this.fixTable = getFixLinkTable();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
