@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pma_xml_export version="1.0" xmlns:pma="http://www.phpmyadmin.net/some_doc_url/">
+    <!--
+    - phpMyAdmin XML Dump
+    - version 4.1.6
+    - http://www.phpmyadmin.net
+    -
+    - Host: vital.cmbotwdj6wje.us-west-2.rds.amazonaws.com
+    - Generation Time: Aug 30, 2014 at 04:35 AM
+    - Server version: 5.6.17
+    - PHP Version: 5.5.9
+    -->
+
+    <!--
+    - Structure schemas
+    -->
+    <pma:structure_schemas>
+        <pma:database name="aspectj" collation="latin1_swedish_ci" charset="latin1">
+            <pma:table name="aspectj">
+                CREATE TABLE `aspectj` (
+                  `id` int(11) NOT NULL AUTO_INCREMENT,
+                  `bug_id` int(11) NOT NULL,
+                  `summary` tinytext CHARACTER SET utf8 NOT NULL,
+                  `description` text CHARACTER SET utf8 NOT NULL,
+                  `report_time` datetime NOT NULL,
+                  `report_timestamp` float NOT NULL,
+                  `status` varchar(50) CHARACTER SET utf8 NOT NULL,
+                  `commit` varchar(50) CHARACTER SET utf8 NOT NULL,
+                  `commit_timestamp` float NOT NULL,
+                  `files` mediumtext CHARACTER SET utf8 NOT NULL,
+                  `result` mediumtext CHARACTER SET utf8 NOT NULL,
+                  PRIMARY KEY (`id`)
+                ) ENGINE=MyISAM AUTO_INCREMENT=594 DEFAULT CHARSET=latin1;
+            </pma:table>
+        </pma:database>
+    </pma:structure_schemas>
+
+    <database name="aspectj">
+        <table name="aspectj">
+            <column name="id">591</column>
+            <column name="bug_id">29186</column>
+            <column name="summary">Bug 29186  ajc -emacssym chokes on pointcut that includes an intertype method</column>
+            <column name="description"></column>
+            <column name="report_time">2003-01-08 21:22:48</column>
+            <column name="report_timestamp">1042080000</column>
+            <column name="status">resolved fixed</column>
+            <column name="commit">c1260e6</column>
+            <column name="commit_timestamp">1042580000</column>
+            <column name="files">asm/src/org/aspectj/asm/StructureModel.java
+org.aspectj.ajdt.core/src/org/aspectj/ajdt/internal/core/builder/AsmBuilder.java
+weaver/src/org/aspectj/weaver/AsmAdaptor.java
+weaver/src/org/aspectj/weaver/Lint.java
+weaver/src/org/aspectj/weaver/ResolvedTypeX.java
+weaver/src/org/aspectj/weaver/Shadow.java
+weaver/src/org/aspectj/weaver/bcel/BcelWeaver.java</column>
+            <column name="result"></column>
+        </table>
+        <table name="aspectj">
+            <column name="id">592</column>
+            <column name="bug_id">28919</column>
+            <column name="summary">Bug 28919  waever tries to weave into native methods ...</column>
+            <column name="description">If you don't find the exception below in a bug, please add a new bug
+To make the bug a priority, please include a test program
+that can reproduce this exception.
+bad non-abstract method with no code: private native int 
+nativeMessagePumpInitialize() on public class 
+plc.comm.pvi.PviCom$LinkEventHandlerImpl
+bad non-abstract method with no code: private native int 
+nativeMessagePumpInitialize() on public class 
+plc.comm.pvi.PviCom$LinkEventHandlerImpl
+java.lang.RuntimeException: bad non-abstract method with no code: private 
+native int nativeMessagePumpInitialize() on public class 
+plc.comm.pvi.PviCom$LinkEventHandlerImpl
+        at org.aspectj.weaver.bcel.LazyMethodGen.&lt;init&gt;(Unknown Source)
+        at org.aspectj.weaver.bcel.LazyClassGen.&lt;init&gt;(Unknown Source)
+        at org.aspectj.weaver.bcel.BcelObjectType.getLazyClassGen(Unknown 
+Source)
+        at org.aspectj.weaver.bcel.BcelWeaver.weave(Unknown Source)
+        at org.aspectj.weaver.bcel.BcelWeaver.weave(Unknown Source)
+        at 
+org.aspectj.ajdt.internal.core.builder.AjBuildManager.weaveAndGenerateClassFiles
+(Unknown Source)
+        at org.aspectj.ajdt.internal.core.builder.AjBuildManager.batchBuild
+(Unknown Source)
+        at org.aspectj.ajdt.ajc.AjdtCommand.runCommand(Unknown Source)
+        at org.aspectj.tools.ajc.Main.run(Unknown Source)
+        at org.aspectj.tools.ajc.Main.runMain(Unknown Source)
+        at org.aspectj.tools.ajc.Main.main(Unknown Source)</column>
+            <column name="report_time">2002-12-30 16:40:03</column>
+            <column name="report_timestamp">1041280000</column>
+            <column name="status">resolved fixed</column>
+            <column name="commit">2781720</column>
+            <column name="commit_timestamp">1042570000</column>
+            <column name="files">weaver/src/org/aspectj/weaver/bcel/LazyMethodGen.java</column>
+            <column name="result"></column>
+        </table>
+        <table name="aspectj">
+            <column name="id">593</column>
+            <column name="bug_id">28974</column>
+            <column name="summary">Bug 28974  Compiler error when introducing a "final" field</column>
+            <column name="description">The aspect below fails to compile with 1.1b2, producing the compilation error: 
+--------------------
+$ ajc com/ibm/amc/*.java com/ibm/amc/ejb/*.java
+d:/eclipse/runtime-workspace-ajsamples/Mock EJBs/com/ibm/amc/DemoBeanEJB.java:1:
+ Cannot assign a value to the final field com.ibm.amc.DemoBean.ajc$interField$co
+m_ibm_amc$verbose
+
+!! no source information available !!
+
+1 error
+---------------------------
+
+
+package com.ibm.amc;
+
+import com.ibm.amc.ejb.SessionBean;
+/**
+ * @author colyer
+ *
+ * To change this generated comment edit the template variable "typecomment":
+ * Window&gt;Preferences&gt;Java&gt;Templates.
+ * To enable and disable the creation of type comments go to
+ * Window&gt;Preferences&gt;Java&gt;Code Generation.
+ */
+public aspect DemoBeanEJB {
+
+	declare parents: DemoBean implements SessionBean;
+	
+        // THIS NEXT LINE IS THE CULPRIT
+	static final boolean DemoBean.verbose = true;
+	
+	private transient String DemoBean.ctx;
+	
+	public void DemoBean.ejbActivate( ) {
+		if ( verbose ) {
+			System.out.println( "ejbActivate Called" );	
+		}	
+	}
+}
+
+
+-------------------
+Making the inter-type declaration non-final solves the problem...</column>
+            <column name="report_time">2003-01-03 10:28:23</column>
+            <column name="report_timestamp">1041610000</column>
+            <column name="status">resolved fixed</column>
+            <column name="commit">99a873c</column>
+            <column name="commit_timestamp">1042570000</column>
+            <column name="files">weaver/src/org/aspectj/weaver/AjcMemberMaker.java</column>
+            <column name="result"></column>
+        </table>
+    </database>
+</pma_xml_export>
