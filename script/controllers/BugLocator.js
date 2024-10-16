@@ -1,5 +1,19 @@
 const fs = require('fs');
+const path = require('path');
+const { exec } = require('child_process');
 
+
+// Helper function to wait until a folder exists
+const waitForDirectory = (directoryPath, interval = 1000) => {
+    return new Promise((resolve) => {
+      const checkDir = setInterval(() => {
+        if (fs.existsSync(directoryPath)) {
+          clearInterval(checkDir);
+          resolve(directoryPath);
+        }
+      }, interval);
+    });
+}
 const findAndReadTxtFiles = async (baseDirectory) => {
     try {
       const files = await fs.promises.readdir(baseDirectory);
@@ -45,7 +59,31 @@ const findAndReadTxtFiles = async (baseDirectory) => {
     }
   };
 
+  
+const execCommand = (command)=>{
+  return new Promise((resolve, reject)=>{
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error executing BugLocator: ${error.message}`);
+        reject((error));
+        return;
+      }
+    
+      if (stderr) {
+        console.error(`Error: ${stderr}`);
+        resolve(stdout);
+        return;
+      }
+    
+      console.log(`Output: ${stdout}`);
+      resolve(stdout);
+    });
+  })
+
+}
+
 
   module.exports={
-    findAndReadTxtFiles
+    findAndReadTxtFiles,
+    execCommand
   }

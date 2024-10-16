@@ -4,6 +4,7 @@ const xml2js = require('xml2js');
 
 
 const outputDir = path.join(__dirname, '../BugReports');
+
 function parseXML(filePath) {
     return new Promise((resolve, reject) => {
       console.log(`Attempting to read file: ${filePath}`);
@@ -99,6 +100,5 @@ function parseXML(filePath) {
   
 module.exports = {
     parseXML,
-    clearDirectory,
     createSeparateXMLFiles
 }
