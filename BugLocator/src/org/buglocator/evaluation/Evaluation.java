@@ -142,18 +142,45 @@ public class Evaluation {
 		return table;
 	}
 
+//	public Hashtable<Integer, TreeSet<String>> getFixLinkTable() throws IOException {
+//		BufferedReader reader = new BufferedReader(new FileReader(this.workDir + "FixLink.txt"));
+//		String line = null;
+//		Hashtable<Integer, TreeSet<String>> table = new Hashtable<Integer, TreeSet<String>>();
+//		while ((line = reader.readLine()) != null) {
+//			String[] valueStrings = line.split("\t");
+//			Integer id = Integer.parseInt(valueStrings[0]);
+//			String fileName = valueStrings[1].trim();
+//			if (!table.containsKey(id)) {
+//				table.put(id, new TreeSet<String>());
+//			}
+//			table.get(id).add(fileName);
+//		}
+//		reader.close();
+//		return table;
+//	}
 	public Hashtable<Integer, TreeSet<String>> getFixLinkTable() throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(this.workDir + "FixLink.txt"));
 		String line = null;
 		Hashtable<Integer, TreeSet<String>> table = new Hashtable<Integer, TreeSet<String>>();
+
 		while ((line = reader.readLine()) != null) {
 			String[] valueStrings = line.split("\t");
-			Integer id = Integer.parseInt(valueStrings[0]);
-			String fileName = valueStrings[1].trim();
-			if (!table.containsKey(id)) {
-				table.put(id, new TreeSet<String>());
+
+			try {
+				// Check if the first value is a number
+				Integer id = Integer.parseInt(valueStrings[0]);
+				String fileName = valueStrings[1].trim();
+
+				// Add the file name to the hashtable
+				if (!table.containsKey(id)) {
+					table.put(id, new TreeSet<String>());
+				}
+				table.get(id).add(fileName);
+
+			} catch (NumberFormatException e) {
+				// This line does not have a valid ID, so we skip it
+				System.out.println("Skipping line: " + line);
 			}
-			table.get(id).add(fileName);
 		}
 		reader.close();
 		return table;

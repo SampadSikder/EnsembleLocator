@@ -96,6 +96,60 @@ public class BugCorpusCreator {
 	 * 
 	 * @return
 	 */
+//	private ArrayList<Bug> parseXML() {
+//		ArrayList<Bug> list = new ArrayList<Bug>();
+//		DocumentBuilderFactory domFactory = DocumentBuilderFactory.newInstance();
+//		try {
+//			DocumentBuilder domBuilder = domFactory.newDocumentBuilder();
+//			System.out.println(Property.getInstance().BugFilePath);
+//			InputStream is = new FileInputStream(Property.getInstance().BugFilePath);
+//			Document doc = domBuilder.parse(is);
+//			Element root = doc.getDocumentElement();
+//			NodeList tables = root.getElementsByTagName("table");
+//
+//			for (int i = 0; i < tables.getLength(); i++) {
+//				Element table = (Element) tables.item(i);
+//				if ("aspectj".equals(table.getAttribute("name"))) {
+//					Bug bug = new Bug();
+//					NodeList columns = table.getElementsByTagName("column");
+//
+//					for (int j = 0; j < columns.getLength(); j++) {
+//						Element column = (Element) columns.item(j);
+//						String name = column.getAttribute("name");
+//						String value = column.getTextContent();
+//
+//						switch (name) {
+//							case "bug_id":
+//								bug.setBugId(value);
+//								break;
+//							case "summary":
+//								bug.setBugSummary(value);
+//								break;
+//							case "description":
+//								bug.setBugDescription(value);
+//								break;
+//							case "report_time":
+//								bug.setOpenDate(makeTime(value));
+//								break;
+//							case "commit_timestamp":
+//								bug.setFixDate(makeTime(value));
+//								break;
+//							case "files":
+//								String[] files = value.split(",");
+//								for (String file : files) {
+//									bug.addFixedFile(file.trim());
+//								}
+//								break;
+//						}
+//					}
+//					list.add(bug);
+//				}
+//			}
+//		} catch (Exception ex) {
+//			ex.printStackTrace();
+//		}
+//		return list;
+//	}
 	private ArrayList<Bug> parseXML() {
 		ArrayList<Bug> list = new ArrayList<Bug>();
 		DocumentBuilderFactory domFactory = DocumentBuilderFactory.newInstance();
@@ -103,54 +157,54 @@ public class BugCorpusCreator {
 			DocumentBuilder domBuilder = domFactory.newDocumentBuilder();
 			System.out.println(Property.getInstance().BugFilePath);
 			InputStream is = new FileInputStream(Property.getInstance().BugFilePath);
+
 			Document doc = domBuilder.parse(is);
 			Element root = doc.getDocumentElement();
 			NodeList tables = root.getElementsByTagName("table");
 
 			for (int i = 0; i < tables.getLength(); i++) {
 				Element table = (Element) tables.item(i);
-				if ("aspectj".equals(table.getAttribute("name"))) {
-					Bug bug = new Bug();
-					NodeList columns = table.getElementsByTagName("column");
 
-					for (int j = 0; j < columns.getLength(); j++) {
-						Element column = (Element) columns.item(j);
-						String name = column.getAttribute("name");
-						String value = column.getTextContent();
+				// No more checking for a specific table name, handle all tables
+				Bug bug = new Bug();
+				NodeList columns = table.getElementsByTagName("column");
 
-						switch (name) {
-							case "bug_id":
-								bug.setBugId(value);
-								break;
-							case "summary":
-								bug.setBugSummary(value);
-								break;
-							case "description":
-								bug.setBugDescription(value);
-								break;
-							case "report_time":
-								bug.setOpenDate(makeTime(value));
-								break;
-							case "commit_timestamp":
-								bug.setFixDate(makeTime(value));
-								break;
-							case "files":
-								String[] files = value.split(",");
-								for (String file : files) {
-									bug.addFixedFile(file.trim());
-								}
-								break;
-						}
+				for (int j = 0; j < columns.getLength(); j++) {
+					Element column = (Element) columns.item(j);
+					String name = column.getAttribute("name");
+					String value = column.getTextContent();
+
+					switch (name) {
+						case "bug_id":
+							bug.setBugId(value);
+							break;
+						case "summary":
+							bug.setBugSummary(value);
+							break;
+						case "description":
+							bug.setBugDescription(value);
+							break;
+						case "report_time":
+							bug.setOpenDate(makeTime(value));
+							break;
+						case "commit_timestamp":
+							bug.setFixDate(makeTime(value));
+							break;
+						case "files":
+							String[] files = value.split(",");
+							for (String file : files) {
+								bug.addFixedFile(file.trim());
+							}
+							break;
 					}
-					list.add(bug);
 				}
+				list.add(bug);
 			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
 		return list;
 	}
-
 
 	/**
 	 * ���� corpus�� ���Ͽ� ���
