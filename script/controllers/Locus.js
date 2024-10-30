@@ -83,5 +83,6 @@ const execCommand = (command)=>{
 }
 
 module.exports={
-    execCommand
+    execCommand,
+    findAndReadTxtFiles
   }
