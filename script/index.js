@@ -53,14 +53,14 @@ async function runCommandForEachFile() {
       
       
       try {
-        await gitController.commitCheckout(sourceCodeDir, filePath);
-        await bugLocator.execCommand(command);
+       await gitController.commitCheckout(sourceCodeDir, filePath);
+       await bugLocator.execCommand(command);
 
-        await bugLocator.findAndReadTxtFiles(workingDir);
+       await bugLocator.findAndReadTxtFiles(workingDir);
 
-        await locus.execCommand(locusCommand);
+       await locus.execCommand(locusCommand);
 
-        await locus.findAndReadTxtFiles(workingDir);
+       await locus.findAndReadTxtFiles(workingDir);
 
         await bluir.execCommand(bluirCommand);
 

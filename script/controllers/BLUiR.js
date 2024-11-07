@@ -22,7 +22,7 @@ const findAndReadTxtFiles = async (baseDirectory) => {
       const unknownTextFolder = files.find(file => fs.statSync(path.join(baseDirectory, file)).isDirectory());
   
       if (unknownTextFolder) {
-        const recommendedDirectory = path.join(baseDirectory, 'result');
+        const recommendedDirectory = path.join(baseDirectory, unknownTextFolder, 'result');
   
         console.log(`Waiting for the result directory to be created: ${recommendedDirectory}`);
   
