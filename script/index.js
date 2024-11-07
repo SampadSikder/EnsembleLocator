@@ -11,6 +11,8 @@ const bugLocatorJar = path.resolve(__dirname, '../BugLocator/classes/buglocator.
 
 const locusJar = path.resolve(__dirname, '../Locus_jar/Locus.jar');
 
+const bluirJar = path.resolve(__dirname, '../BLUiR_jar/BLUiR.jar');
+
 const bugInfoFile = path.resolve("/mnt/c/Users/BS01319/Documents/EnsembleLocator/bug2.xml");
 
 const sourceCodeDir = path.resolve("/mnt/c/Users/BS01319/Documents/AspectJ/gitrepo");
@@ -24,6 +26,8 @@ const bugLocator = require('./controllers/BugLocator.js');
 const locus = require('./controllers/Locus.js');
 
 const gitController = require('./controllers/GitController.js');
+
+const bluir = require('./controllers/BLUiR.js');
 
 async function runCommandForEachFile() {
   const outputDir = path.join(__dirname, './BugReports');
@@ -44,17 +48,23 @@ async function runCommandForEachFile() {
       const locusFlags = `-t all -r ${sourceCodeDir} -b ${filePath} -s ${sourceCodeDir} -w ${workingDir}`;
 
       const locusCommand = `java -jar ${locusJar} ${locusFlags}`;
+
+      const bluirCommand = `java -jar ${bluirJar} ${bugLocatorFlags}`;
       
       
       try {
-        await gitController.commitCheckout(sourceCodeDir, filePath);
-        await bugLocator.execCommand(command);
+       await gitController.commitCheckout(sourceCodeDir, filePath);
+       await bugLocator.execCommand(command);
 
-        await bugLocator.findAndReadTxtFiles(workingDir);
+       await bugLocator.findAndReadTxtFiles(workingDir);
 
-        await locus.execCommand(locusCommand);
+       await locus.execCommand(locusCommand);
 
-        await locus.findAndReadTxtFiles(workingDir);
+       await locus.findAndReadTxtFiles(workingDir);
+
+        await bluir.execCommand(bluirCommand);
+
+        await bluir.findAndReadTxtFiles(workingDir);
         //console.log(`Output for ${file}:`, stdout);
       } catch (error) {
         console.error(`Error executing command for ${file}:`, error);

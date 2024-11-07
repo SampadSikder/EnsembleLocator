@@ -64,7 +64,7 @@ const execCommand = (command)=>{
     return new Promise((resolve, reject)=>{
       exec(command, (error, stdout, stderr) => {
         if (error) {
-          console.error(`Error executing BugLocator: ${error.message}`);
+          console.error(`Error executing Locus: ${error.message}`);
           reject((error));
           return;
         }
