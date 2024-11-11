@@ -13,6 +13,8 @@ const locusJar = path.resolve(__dirname, '../Locus_jar/Locus.jar');
 
 const bluirJar = path.resolve(__dirname, '../BLUiR_jar/BLUiR.jar');
 
+const amalgamJar = path.resolve(__dirname, '../AmaLgam_jar/AmaLgam.jar');
+
 const bugInfoFile = path.resolve("/mnt/c/Users/BS01319/Documents/EnsembleLocator/bug2.xml");
 
 const sourceCodeDir = path.resolve("/mnt/c/Users/BS01319/Documents/AspectJ/gitrepo");
@@ -28,6 +30,8 @@ const locus = require('./controllers/Locus.js');
 const gitController = require('./controllers/GitController.js');
 
 const bluir = require('./controllers/BLUiR.js');
+
+const amalgam = require('./controllers/AmaLgam.js');
 
 async function runCommandForEachFile() {
   const outputDir = path.join(__dirname, './BugReports');
@@ -47,14 +51,18 @@ async function runCommandForEachFile() {
 
       const locusFlags = `-t all -r ${sourceCodeDir} -b ${filePath} -s ${sourceCodeDir} -w ${workingDir}`;
 
+      const amalgamFlags = `-b ${filePath} -s ${sourceCodeDir} -g ${sourceCodeDir} -a ${alphaValue} -w ${workingDir} -n ${resultFile}`;
+
       const locusCommand = `java -jar ${locusJar} ${locusFlags}`;
 
       const bluirCommand = `java -jar ${bluirJar} ${bugLocatorFlags}`;
+
+      const amalgamCommand = `java -jar ${amalgamJar} ${amalgamFlags}`;
       
       
       try {
        await gitController.commitCheckout(sourceCodeDir, filePath);
-       await bugLocator.execCommand(command);
+      await bugLocator.execCommand(command);
 
        await bugLocator.findAndReadTxtFiles(workingDir);
 
@@ -65,6 +73,10 @@ async function runCommandForEachFile() {
         await bluir.execCommand(bluirCommand);
 
         await bluir.findAndReadTxtFiles(workingDir);
+
+        await amalgam.execCommand(amalgamCommand);
+
+        await amalgam.findAndReadTxtFiles(workingDir);
         //console.log(`Output for ${file}:`, stdout);
       } catch (error) {
         console.error(`Error executing command for ${file}:`, error);
