@@ -3,9 +3,11 @@ const app = express();
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const readline = require('readline');
 
 app.use(cors());
 app.use(express.json());
+
 
 const bugLocatorJar = path.resolve(__dirname, '../BugLocator/classes/buglocator.jar');
 
@@ -15,11 +17,11 @@ const bluirJar = path.resolve(__dirname, '../BLUiR_jar/BLUiR.jar');
 
 const amalgamJar = path.resolve(__dirname, '../AmaLgam_jar/AmaLgam.jar');
 
-const bugInfoFile = path.resolve("/mnt/c/Users/BS01319/Documents/EnsembleLocator/bug2.xml");
+// const bugInfoFile = path.resolve("/mnt/c/Users/BS01319/Documents/EnsembleLocator/bug2.xml");
 
-const sourceCodeDir = path.resolve("/mnt/c/Users/BS01319/Documents/AspectJ/gitrepo");
+// const sourceCodeDir = path.resolve("/mnt/c/Users/BS01319/Documents/AspectJ/gitrepo");
 
-const alphaValue = 0.2;
+// const alphaValue = 0.2;
 
 const xmlParser = require('./controllers/XMLParserAndBuilder.js');
 
@@ -33,7 +35,7 @@ const bluir = require('./controllers/BLUiR.js');
 
 const amalgam = require('./controllers/AmaLgam.js');
 
-async function runCommandForEachFile() {
+async function runCommandForEachFile(sourceCodeDir, alphaValue) {
   const outputDir = path.join(__dirname, './BugReports');
 
   const files = await fs.promises.readdir(outputDir);
@@ -84,17 +86,49 @@ async function runCommandForEachFile() {
     }
   }
 }
+const askQuestion = (query) => {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
 
+  return new Promise((resolve) => rl.question(query, (answer) => {
+    rl.close();
+    resolve(answer);
+  }));
+};
 
-// Call the function with your base directory
+async function getInputs() {
+  try {
+    const bugInfoPath = await askQuestion("Enter the path to the bug info file: ");
+    const bugInfoFile = path.resolve(bugInfoPath);
+
+    const sourceCodePath = await askQuestion("Enter the path to the source code directory: ");
+    const sourceCodeDir = path.resolve(sourceCodePath);
+
+    const alphaInput = await askQuestion("Enter the alpha value: ");
+    const alphaValue = parseFloat(alphaInput);
+
+    console.log("Bug Info File Path:", bugInfoFile);
+    console.log("Source Code Directory Path:", sourceCodeDir);
+    console.log("Alpha Value:", alphaValue);
+
+    return {bugInfoFile, sourceCodeDir, alphaValue};
+
+  } catch (error) {
+    console.error("Error:", error);
+  }
+}
+
 const main = async ()=>{
   try{
+    const {bugInfoFile, sourceCodeDir, alphaValue} = await getInputs();
     const parsedXML = await xmlParser.parseXML(bugInfoFile);
     const bugs = parsedXML.pma_xml_export.database[0].table;
     console.log(`Creating separate XML files for ${bugs.length} bugs...`);
     await xmlParser.createSeparateXMLFiles(bugs);
     console.log(`Separate XML files created. Running command for each file...`);
-    await runCommandForEachFile();
+    await runCommandForEachFile(sourceCodeDir, alphaValue);
   //await execCommand(command);
   console.log("Bug locator completed execution");
   

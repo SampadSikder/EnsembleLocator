@@ -15,3 +15,11 @@ Several static techniques exist to localize bugs, for example:
 
 Each of these techniques has varying degrees of accuracy, along with distinct advantages and disadvantages in localizing bugs. An ensemble approach that combines these techniques can greatly enhance fault localization. The objective of this project is to develop a GitHub plugin/extension that utilizes this ensemble approach to generate a ranked list of buggy files based on GitHub issues.
 
+# How to run
+
+- Navigate to script folder
+- Run 
+  ```npm install```
+- Run
+  ```node index.js```
+- Specify bug report, source code directory and alpha value
