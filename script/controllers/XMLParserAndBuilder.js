@@ -71,9 +71,6 @@ function parseXML(filePath) {
                   "xmlns:pma": "http://www.phpmyadmin.net/some_doc_url/"
                 },
                 "database": {
-                  "$": {
-                    "name": "aspectj"
-                  },
                   "table": bug // Pass the bug directly to table without a 'bug' wrapper
                 }
               }
@@ -97,8 +94,55 @@ function parseXML(filePath) {
       });
     });
   }
+
+  function createSingleXMLFile(bugs) {
+    return new Promise((resolve, reject) => {
+      fs.mkdir(outputDir, { recursive: true }, async (mkdirErr) => {
+        if (mkdirErr) {
+          return reject(mkdirErr);
+        }
+        
+        try {
+          await clearDirectory(outputDir);
   
+          const xmlData = {
+            "pma_xml_export": {
+              "$": {
+                "version": "1.0",
+                "xmlns:pma": "http://www.phpmyadmin.net/some_doc_url/"
+              },
+              "database": {
+                "table": bugs // Include all bugs as an array under the "table" key
+              }
+            }
+          };
+  
+          const builder = new xml2js.Builder();
+          const xml = builder.buildObject(xmlData);
+          const fileName = `all_bugs.xml`;
+  
+          await new Promise((resolveWrite, rejectWrite) => {
+            fs.writeFile(path.join(outputDir, fileName), xml, (writeErr) => {
+              if (writeErr) rejectWrite(writeErr);
+              else resolveWrite();
+            });
+          });
+  
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+  }
+  //TBD a function to append the new issue as a bug to the bug repository 
+  const appendBug = function(bug){
+    // Implement your bug appending logic here.
+    // For example, you could use a database or a file system to save the bug information.
+    console.log(`Appending bug:`, bug);
+  }
 module.exports = {
     parseXML,
-    createSeparateXMLFiles
+    createSeparateXMLFiles,
+    createSingleXMLFile
 }

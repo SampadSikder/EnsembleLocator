@@ -21,15 +21,15 @@ const findAndReadTxtFiles = async (baseDirectory) => {
       // Find the unknown folder (assuming there's only one unknown folder)
       const unknownTextFolder = files.find(file => fs.statSync(path.join(baseDirectory, file)).isDirectory());
   
-      if (unknownTextFolder.startsWith("BugLocator")) {
+      if (unknownTextFolder.startsWith("AmaLgam")) {
         const recommendedDirectory = path.join(baseDirectory, unknownTextFolder, 'recommended');
   
-        console.log(`Waiting for the recommended directory to be created: ${recommendedDirectory}`);
+        console.log(`Waiting for the result directory to be created: ${recommendedDirectory}`);
   
         // Wait for the recommended directory to be created
         await waitForDirectory(recommendedDirectory);
   
-        console.log(`Recommended directory found: ${recommendedDirectory}`);
+        console.log(`Result directory found: ${recommendedDirectory}`);
   
         const txtFiles = await fs.promises.readdir(recommendedDirectory);
   
@@ -64,7 +64,7 @@ const execCommand = (command)=>{
   return new Promise((resolve, reject)=>{
     exec(command, (error, stdout, stderr) => {
       if (error) {
-        console.error(`Error executing BugLocator: ${error.message}`);
+        console.error(`Error executing AmaLgam: ${error.message}`);
         reject((error));
         return;
       }

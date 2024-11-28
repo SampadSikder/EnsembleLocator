@@ -20,8 +20,8 @@ const findAndReadTxtFiles = async (baseDirectory) => {
     // Find the unknown folder (assuming there's only one unknown folder)
     const unknownTextFolder = files.find(file => fs.statSync(path.join(baseDirectory, file)).isDirectory());
 
-    if (unknownTextFolder) {
-      const recommendedDirectory = path.join(baseDirectory, 'recommended');
+    if (unknownTextFolder.startsWith("Locus")) {
+      const recommendedDirectory = path.join(baseDirectory, "Locus", 'recommended');
 
       console.log(`Waiting for the recommended directory to be created: ${recommendedDirectory}`);
 
