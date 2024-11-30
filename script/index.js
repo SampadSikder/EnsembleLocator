@@ -45,17 +45,19 @@ async function runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum) {
     
       const workingDir = path.resolve(__dirname, `./results/${file}`);
 
+      const outputLogDir = path.resolve(__dirname, `./Logs/${techniqueNum}.txt`);
+
       const resultFile = "AspectJResult";
 
       const locusWorkingDir = path.join(workingDir, "./Locus");
       
-      const bugLocatorFlags = `-b ${filePath} -s ${sourceCodeDir} -a ${alphaValue} -w ${workingDir} -n ${resultFile}`
+      const bugLocatorFlags = `-b ${filePath} -s ${sourceCodeDir} -a ${alphaValue} -w ${workingDir} -n ${resultFile} > ${outputLogDir} `
 
       const command = `java -jar ${bugLocatorJar} ${bugLocatorFlags}`;
 
-      const locusFlags = `-t all -r ${sourceCodeDir} -b ${filePath} -s ${sourceCodeDir} -w ${locusWorkingDir}`;
+      const locusFlags = `-t all -r ${sourceCodeDir} -b ${filePath} -s ${sourceCodeDir} -w ${locusWorkingDir} > ${outputLogDir}`;
 
-      const amalgamFlags = `-b ${filePath} -s ${sourceCodeDir} -g ${sourceCodeDir} -a ${alphaValue} -w ${workingDir} -n ${resultFile}`;
+      const amalgamFlags = `-b ${filePath} -s ${sourceCodeDir} -g ${sourceCodeDir} -a ${alphaValue} -w ${workingDir} -n ${resultFile} > ${outputLogDir}`;
 
       const locusCommand = `java -jar ${locusJar} ${locusFlags}`;
 
