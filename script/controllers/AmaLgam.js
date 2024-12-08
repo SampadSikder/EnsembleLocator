@@ -70,12 +70,12 @@ const execCommand = (command)=>{
       }
     
       if (stderr) {
-        console.error(`Error: ${stderr}`);
+        //console.error(`Error: ${stderr}`);
         resolve(stdout);
         return;
       }
     
-      console.log(`Output: ${stdout}`);
+      //console.log(`Output: ${stdout}`);
       resolve(stdout);
     });
   })

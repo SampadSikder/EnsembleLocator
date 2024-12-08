@@ -94,6 +94,7 @@ function parseXML(filePath) {
       });
     });
   }
+  
 
   function createSingleXMLFile(bugs) {
     return new Promise((resolve, reject) => {
@@ -135,14 +136,79 @@ function parseXML(filePath) {
       });
     });
   }
-  //TBD a function to append the new issue as a bug to the bug repository 
-  const appendBug = function(bug){
-    // Implement your bug appending logic here.
-    // For example, you could use a database or a file system to save the bug information.
-    console.log(`Appending bug:`, bug);
+  function createSingleXMLforLocus(bugs) {
+    return new Promise((resolve, reject) => {
+      fs.mkdir(outputDir, { recursive: true }, async (mkdirErr) => {
+        if (mkdirErr) {
+          return reject(new Error(`Error creating directory: ${mkdirErr.message}`));
+        }
+  
+        try {
+          // Transform bugs into the desired structure
+          const transformedBugs = bugs.map(bug => ({
+            $: {
+              id: bug.column.find(col => col.$.name === 'bug_id')?._ || 'unknown',
+              opendate: bug.column.find(col => col.$.name === 'report_timestamp')?._ || '',
+              fixdate: bug.column.find(col => col.$.name === 'commit_timestamp')?._ || '',
+            },
+            buginformation: [{
+              summary: [bug.column.find(col => col.$.name === 'summary')?._ || ''],
+              description: [bug.column.find(col => col.$.name === 'description')?._ || ''],
+            }],
+            fixedFiles: [{
+              file: bug.column.find(col => col.$.name === 'files')?._?.split('\n').map(file => file.trim()) || []
+            }],
+          }));
+  
+          const xmlData = {
+            bugrepository: {
+              $: { name: "Bug" },
+              bug: transformedBugs,
+            },
+          };
+  
+          // Build the transformed XML
+          const builder = new xml2js.Builder({
+            rootName: 'bugrepository',
+            xmldec: { version: '1.0', encoding: 'UTF-8' },
+          });
+          const transformedXml = builder.buildObject(xmlData);
+  
+          // Write the transformed XML to a file
+          const outputFilePath = path.join(outputDir, 'locus_all_bugs.xml');
+          await new Promise((resolveWrite, rejectWrite) => {
+            fs.writeFile(outputFilePath, transformedXml, (writeErr) => {
+              if (writeErr) {
+                return rejectWrite(new Error(`Error writing file: ${writeErr.message}`));
+              }
+              resolveWrite();
+            });
+          });
+  
+          resolve(outputFilePath);
+        } catch (error) {
+          reject(new Error(`Error processing XML: ${error.message}`));
+        }
+      });
+    });
   }
+  
+  //Function to append history bugs to bug
+  const appendBug = function(bugs, historyBugs){
+    if (!Array.isArray(bugs) || !Array.isArray(historyBugs)) {
+      throw new Error("Both 'bugs' and 'historyBugs' must be arrays.");
+  }
+  
+  // Append historyBugs to bugs
+  bugs.push(...historyBugs);
+  
+  // Return the updated bugs object
+  return bugs;
+}
 module.exports = {
     parseXML,
     createSeparateXMLFiles,
-    createSingleXMLFile
+    createSingleXMLFile,
+    createSingleXMLforLocus,
+    appendBug,
 }

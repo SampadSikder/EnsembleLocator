@@ -64,18 +64,18 @@ const execCommand = (command)=>{
   return new Promise((resolve, reject)=>{
     exec(command, (error, stdout, stderr) => {
       if (error) {
-        console.error(`Error executing BLUiR: ${error.message}`);
+        //console.error(`Error executing BLUiR: ${error.message}`);
         reject((error));
         return;
       }
     
       if (stderr) {
-        console.error(`Error: ${stderr}`);
+        //console.error(`Error: ${stderr}`);
         resolve(stdout);
         return;
       }
     
-      console.log(`Output: ${stdout}`);
+      //console.log(`Output: ${stdout}`);
       resolve(stdout);
     });
   })

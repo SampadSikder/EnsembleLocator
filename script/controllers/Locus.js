@@ -21,7 +21,7 @@ const findAndReadTxtFiles = async (baseDirectory) => {
     const unknownTextFolder = files.find(file => fs.statSync(path.join(baseDirectory, file)).isDirectory());
 
     if (unknownTextFolder.startsWith("Locus")) {
-      const recommendedDirectory = path.join(baseDirectory, "Locus", 'recommended');
+      const recommendedDirectory = path.join(baseDirectory, unknownTextFolder, 'recommended');
 
       console.log(`Waiting for the recommended directory to be created: ${recommendedDirectory}`);
 
@@ -65,17 +65,17 @@ const execCommand = (command)=>{
       exec(command, (error, stdout, stderr) => {
         if (error) {
           console.error(`Error executing Locus: ${error.message}`);
-          reject((error));
+          resolve((error));
           return;
         }
       
         if (stderr) {
-          console.error(`Error: ${stderr}`);
+          //console.error(`Error: ${stderr}`);
           resolve(stdout);
           return;
         }
       
-        console.log(`Output: ${stdout}`);
+        //console.log(`Output: ${stdout}`);
         resolve(stdout);
       });
     })
