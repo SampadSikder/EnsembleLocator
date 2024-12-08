@@ -39,15 +39,21 @@ async function runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum) {
   const outputDir = path.join(__dirname, './BugReports');
 
   const files = await fs.promises.readdir(outputDir);
+  let locusFlag = false;
   for (const file of files) {
-    if (path.extname(file) === '.xml') {
+    if (file.startsWith('locus')) {
+      locusFlag = true;
+    }else{
+      locusFlag = false;
+    }
+    if (path.extname(file) === '.xml' && file.startsWith) {
       const filePath = path.join(outputDir, file);
-    
+
       const workingDir = path.resolve(__dirname, `./results/${file}`);
 
       const outputLogDir = path.resolve(__dirname, `./Logs/${techniqueNum}.txt`);
 
-      const resultFile = "AspectJResult";
+      const resultFile = "Result";
 
       const locusWorkingDir = path.join(workingDir, "./Locus");
       
@@ -65,52 +71,57 @@ async function runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum) {
 
       const amalgamCommand = `java -jar ${amalgamJar} ${amalgamFlags}`;
       
-      
       try {
-       await gitController.commitCheckout(sourceCodeDir, filePath);
-
-       if (techniqueNum === 1) {
-        await bugLocator.execCommand(command);
-        await bugLocator.findAndReadTxtFiles(workingDir);
-      } else if (techniqueNum === 2) {
-        await locus.execCommand(locusCommand);
-        await locus.findAndReadTxtFiles(workingDir);
-      } else if (techniqueNum === 3) {
-        await bluir.execCommand(bluirCommand);
-        await bluir.findAndReadTxtFiles(workingDir);
-      } else if (techniqueNum === 4) {
-        await amalgam.execCommand(amalgamCommand);
-        await amalgam.findAndReadTxtFiles(workingDir);
-      } else if (techniqueNum === 5) {
-        // Run all techniques sequentially
-        await bugLocator.execCommand(command);
-
-        await bugLocator.findAndReadTxtFiles(workingDir);
+       if(locusFlag == false){
+          await gitController.commitCheckout(sourceCodeDir, filePath);
+          if (techniqueNum === 1) {
+            await bugLocator.execCommand(command);
+            await bugLocator.findAndReadTxtFiles(workingDir);
+          }else if (techniqueNum === 3) {
+            await bluir.execCommand(bluirCommand);
+            await bluir.findAndReadTxtFiles(workingDir);
+          } else if (techniqueNum === 4) {
+            await amalgam.execCommand(amalgamCommand);
+            await amalgam.findAndReadTxtFiles(workingDir);
+          } else if (techniqueNum === 5) {
+              await bugLocator.execCommand(command);
+    
+              await bugLocator.findAndReadTxtFiles(workingDir);
+              await bluir.execCommand(bluirCommand);
+     
+              await bluir.findAndReadTxtFiles(workingDir);
+      
+              await amalgam.execCommand(amalgamCommand);
+      
+              await amalgam.findAndReadTxtFiles(workingDir);
+              
+              continue;
+            }
+        }
+     else{
+          if(techniqueNum === 2){
+          await locus.execCommand(locusCommand);
  
-        await locus.execCommand(locusCommand);
- 
-        await locus.findAndReadTxtFiles(workingDir);
- 
-         await bluir.execCommand(bluirCommand);
- 
-         await bluir.findAndReadTxtFiles(workingDir);
- 
-         await amalgam.execCommand(amalgamCommand);
- 
-         await amalgam.findAndReadTxtFiles(workingDir);
-
+          await locus.findAndReadTxtFiles(workingDir);
+          
+          continue;
+          }
+        }
+      
+      }
+      catch (error) {
+      console.error(`Error executing command for ${file}:`, error);
+    }
       } else {
         console.error(`Invalid techniqueNum: ${techniqueNum}`);
       }
       
  
         //console.log(`Output for ${file}:`, stdout);
-      } catch (error) {
-        console.error(`Error executing command for ${file}:`, error);
-      }
+     
     }
   }
-}
+
 const askQuestion = (query) => {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -128,6 +139,9 @@ async function getInputs() {
     const bugInfoPath = await askQuestion("Enter the path to the bug info file: ");
     const bugInfoFile = path.resolve(bugInfoPath);
 
+    const bugHistoryPath = await askQuestion("Enter the path to the bug history file: ");
+    const bugHistoryFile = path.resolve(bugHistoryPath);
+
     const sourceCodePath = await askQuestion("Enter the path to the source code directory: ");
     const sourceCodeDir = path.resolve(sourceCodePath);
 
@@ -142,7 +156,7 @@ async function getInputs() {
     console.log("Alpha Value:", alphaValue);
     console.log("techniqueNum:", techniqueNum);
 
-    return {bugInfoFile, sourceCodeDir, alphaValue, techniqueNum};
+    return {bugInfoFile, bugHistoryFile, sourceCodeDir, alphaValue, techniqueNum};
 
   } catch (error) {
     console.error("Error:", error);
@@ -151,11 +165,16 @@ async function getInputs() {
 
 const main = async ()=>{
   try{
-    const {bugInfoFile, sourceCodeDir, alphaValue, techniqueNum} = await getInputs();
+    const {bugInfoFile, bugHistoryFile, sourceCodeDir, alphaValue, techniqueNum} = await getInputs();
     const parsedXML = await xmlParser.parseXML(bugInfoFile);
     const bugs = parsedXML.pma_xml_export.database[0].table;
-    console.log(`Creating separate XML files for ${bugs.length} bugs...`);
-    await xmlParser.createSingleXMLFile(bugs);
+    const parsedHistoryXML = await xmlParser.parseXML(bugHistoryFile);
+    const historyBugs = parsedHistoryXML.pma_xml_export.database[0].table;
+    const bugsWithHistory = xmlParser.appendBug(bugs, historyBugs);
+    console.log(`Creating separate XML files for ${bugs.length} bugs with ${historyBugs.length} history bugs....`);
+    await xmlParser.createSingleXMLFile(bugsWithHistory);
+    console.log(`Separate XML files for Locus for ${bugs.length} bugs with ${historyBugs.length} history bugs....`);
+    await xmlParser.createSingleXMLforLocus(bugsWithHistory);
     console.log(`Separate XML files created. Running command for each file...`);
     await runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum);
   //await execCommand(command);
