@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
+const rankFormatter = require('./RankFormatter.js');
+
+const locusDir = path.join(__dirname, '../results/locus_all_bugs.xml/Locus');
 
 // Helper function to wait until a folder exists
 const waitForDirectory = (directoryPath, interval = 1000) => {
@@ -14,6 +17,7 @@ const waitForDirectory = (directoryPath, interval = 1000) => {
   });
 }
 const findAndReadTxtFiles = async (baseDirectory) => {
+  await rankFormatter.processLocusOutput(baseDirectory);
   try {
     const files = await fs.promises.readdir(baseDirectory);
     
@@ -58,9 +62,51 @@ const findAndReadTxtFiles = async (baseDirectory) => {
   }
 };
 
+function clearDirectory(directory) {
+  return new Promise((resolve, reject) => {
+    fs.readdir(directory, (err, files) => {
+      if (err) {
+        if (err.code === 'ENOENT') {
+          console.log(`Directory does not exist: ${directory}`);
+          return resolve();
+        }
+        return reject(err);
+      }
+      Promise.all(files.map(file => 
+        new Promise((resolveUnlink, rejectUnlink) => {
+          const filePath = path.join(directory, file);
+          fs.stat(filePath, (statErr, stats) => {
+            if (statErr) {
+              return rejectUnlink(statErr);
+            }
+            if (stats.isDirectory()) {
+              clearDirectory(filePath).then(() => {
+                fs.rmdir(filePath, (rmdirErr) => {
+                  if (rmdirErr) rejectUnlink(rmdirErr);
+                  else resolveUnlink();
+                });
+              }).catch(rejectUnlink);
+            } else {
+              fs.unlink(filePath, (unlinkErr) => {
+                if (unlinkErr) rejectUnlink(unlinkErr);
+                else resolveUnlink();
+              });
+            }
+          });
+        })
+      )).then(() => {
+        console.log(`Cleared directory: ${directory}`);
+        resolve();
+      }).catch(reject);
+    });
+  });
+}
 
 
-const execCommand = (command)=>{
+
+const execCommand = async (command)=>{
+    await clearDirectory(locusDir);
+
     return new Promise((resolve, reject)=>{
       exec(command, (error, stdout, stderr) => {
         if (error) {

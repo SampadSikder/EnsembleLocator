@@ -73,7 +73,7 @@ async function runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum) {
       
       try {
        if(locusFlag == false){
-          await gitController.commitCheckout(sourceCodeDir, filePath);
+          //await gitController.commitCheckout(sourceCodeDir, filePath);
           if (techniqueNum === 1) {
             await bugLocator.execCommand(command);
             await bugLocator.findAndReadTxtFiles(workingDir);
@@ -87,6 +87,7 @@ async function runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum) {
               await bugLocator.execCommand(command);
     
               await bugLocator.findAndReadTxtFiles(workingDir);
+              
               await bluir.execCommand(bluirCommand);
      
               await bluir.findAndReadTxtFiles(workingDir);
@@ -99,7 +100,7 @@ async function runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum) {
             }
         }
      else{
-          if(techniqueNum === 2){
+          if(techniqueNum === 2) {
           await locus.execCommand(locusCommand);
  
           await locus.findAndReadTxtFiles(workingDir);
@@ -122,50 +123,103 @@ async function runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum) {
     }
   }
 
-const askQuestion = (query) => {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
+// const askQuestion = (query) => {
+//   const rl = readline.createInterface({
+//     input: process.stdin,
+//     output: process.stdout
+//   });
 
-  return new Promise((resolve) => rl.question(query, (answer) => {
-    rl.close();
-    resolve(answer);
-  }));
-};
+//   return new Promise((resolve) => rl.question(query, (answer) => {
+//     rl.close();
+//     resolve(answer);
+//   }));
+// };
 
-async function getInputs() {
-  try {
-    const bugInfoPath = await askQuestion("Enter the path to the bug info file: ");
-    const bugInfoFile = path.resolve(bugInfoPath);
+// async function getInputs() {
+//   try {
+//     const bugInfoPath = await askQuestion("Enter the path to the bug info file: ");
+//     const bugInfoFile = path.resolve(bugInfoPath);
 
-    const bugHistoryPath = await askQuestion("Enter the path to the bug history file: ");
-    const bugHistoryFile = path.resolve(bugHistoryPath);
+//     const bugHistoryPath = await askQuestion("Enter the path to the bug history file: ");
+//     const bugHistoryFile = path.resolve(bugHistoryPath);
 
-    const sourceCodePath = await askQuestion("Enter the path to the source code directory: ");
-    const sourceCodeDir = path.resolve(sourceCodePath);
+//     const sourceCodePath = await askQuestion("Enter the path to the source code directory: ");
+//     const sourceCodeDir = path.resolve(sourceCodePath);
 
-    const alphaInput = await askQuestion("Enter the alpha value: ");
-    const alphaValue = parseFloat(alphaInput);
+//     const alphaInput = await askQuestion("Enter the alpha value: ");
+//     const alphaValue = parseFloat(alphaInput);
 
-    const techniqueName = await askQuestion("Enter the technique number:\n1. BugLocator\n2. Locus\n3. BLUiR \n 5.All");
-    const techniqueNum = parseInt(techniqueName);
+//     const techniqueName = await askQuestion("Enter the technique number:\n1. BugLocator\n2. Locus\n3. BLUiR \n 5.All");
+//     const techniqueNum = parseInt(techniqueName);
 
-    console.log("Bug Info File Path:", bugInfoFile);
-    console.log("Source Code Directory Path:", sourceCodeDir);
-    console.log("Alpha Value:", alphaValue);
-    console.log("techniqueNum:", techniqueNum);
+//     console.log("Bug Info File Path:", bugInfoFile);
+//     console.log("Source Code Directory Path:", sourceCodeDir);
+//     console.log("Alpha Value:", alphaValue);
+//     console.log("techniqueNum:", techniqueNum);
 
-    return {bugInfoFile, bugHistoryFile, sourceCodeDir, alphaValue, techniqueNum};
+//     return {bugInfoFile, bugHistoryFile, sourceCodeDir, alphaValue, techniqueNum};
 
-  } catch (error) {
-    console.error("Error:", error);
+//   } catch (error) {
+//     console.error("Error:", error);
+//   }
+// }
+async function getInputsFromArgs() {
+  const args = process.argv.slice(2);
+  const inputs = {
+    bugInfoFile: null,
+    bugHistoryFile: null,
+    sourceCodeDir: null,
+    alphaValue: null,
+    techniqueNum: null
+  };
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "-b":
+        inputs.bugInfoFile = path.resolve(args[++i]);
+        break;
+      case "-h":
+        inputs.bugHistoryFile = path.resolve(args[++i]);
+        break;
+      case "-s":
+        inputs.sourceCodeDir = path.resolve(args[++i]);
+        break;
+      case "-a":
+        inputs.alphaValue = parseFloat(args[++i]);
+        break;
+      case "-t":
+        inputs.techniqueNum = parseInt(args[++i]);
+        break;
+      default:
+        console.error(`Unknown argument: ${args[i]}`);
+    }
   }
+
+  if (!inputs.bugInfoFile || !inputs.bugHistoryFile || !inputs.sourceCodeDir || inputs.alphaValue === null || inputs.techniqueNum === null) {
+    console.error("Missing required arguments. Usage:");
+    console.error("node script.js -b <bugInfoFile> -h <bugHistoryFile> -s <sourceCodeDir> -a <alphaValue> -t <techniqueNum :\n1. BugLocator\n2. Locus\n3. BLUiR \n 5.All>");
+    process.exit(1);
+  }
+
+  console.log("Bug Info File Path:", inputs.bugInfoFile);
+  console.log("Bug History File Path:", inputs.bugHistoryFile);
+  console.log("Source Code Directory Path:", inputs.sourceCodeDir);
+  console.log("Alpha Value:", inputs.alphaValue);
+  console.log("Technique Number:", inputs.techniqueNum);
+
+  return {
+    bugInfoFile: inputs.bugInfoFile,
+    bugHistoryFile: inputs.bugHistoryFile,
+    sourceCodeDir: inputs.sourceCodeDir,
+    alphaValue: inputs.alphaValue,
+    techniqueNum: inputs.techniqueNum
+  };
 }
+
 
 const main = async ()=>{
   try{
-    const {bugInfoFile, bugHistoryFile, sourceCodeDir, alphaValue, techniqueNum} = await getInputs();
+    const {bugInfoFile, bugHistoryFile, sourceCodeDir, alphaValue, techniqueNum} = await getInputsFromArgs();
     const parsedXML = await xmlParser.parseXML(bugInfoFile);
     const bugs = parsedXML.pma_xml_export.database[0].table;
     const parsedHistoryXML = await xmlParser.parseXML(bugHistoryFile);
