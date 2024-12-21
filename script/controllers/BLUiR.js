@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
-
+const  rankFormatter = require('./RankFormatter.js');
 
 // Helper function to wait until a folder exists
 const waitForDirectory = (directoryPath, interval = 1000) => {
@@ -15,6 +15,7 @@ const waitForDirectory = (directoryPath, interval = 1000) => {
     });
 }
 const findAndReadTxtFiles = async (baseDirectory) => {
+    await rankFormatter.processBluirOutput(baseDirectory);
     try {
       const files = await fs.promises.readdir(baseDirectory);
       
