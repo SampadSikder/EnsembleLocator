@@ -8,6 +8,12 @@ const readline = require('readline');
 app.use(cors());
 app.use(express.json());
 
+const routes = require('./routes/route.js');
+app.use("/", routes);
+
+const port = 8080;
+
+
 
 const bugLocatorJar = path.resolve(__dirname, '../BugLocator/classes/buglocator.jar');
 
@@ -219,20 +225,23 @@ async function getInputsFromArgs() {
 
 const main = async ()=>{
   try{
-    const {bugInfoFile, bugHistoryFile, sourceCodeDir, alphaValue, techniqueNum} = await getInputsFromArgs();
-    const parsedXML = await xmlParser.parseXML(bugInfoFile);
-    const bugs = parsedXML.pma_xml_export.database[0].table;
-    const parsedHistoryXML = await xmlParser.parseXML(bugHistoryFile);
-    const historyBugs = parsedHistoryXML.pma_xml_export.database[0].table;
-    const bugsWithHistory = xmlParser.appendBug(bugs, historyBugs);
-    console.log(`Creating separate XML files for ${bugs.length} bugs with ${historyBugs.length} history bugs....`);
-    await xmlParser.createSingleXMLFile(bugsWithHistory);
-    console.log(`Separate XML files for Locus for ${bugs.length} bugs with ${historyBugs.length} history bugs....`);
-    await xmlParser.createSingleXMLforLocus(bugsWithHistory);
-    console.log(`Separate XML files created. Running command for each file...`);
-    await runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum);
+    // const {bugInfoFile, bugHistoryFile, sourceCodeDir, alphaValue, techniqueNum} = await getInputsFromArgs();
+    // const parsedXML = await xmlParser.parseXML(bugInfoFile);
+    // const bugs = parsedXML.pma_xml_export.database[0].table;
+    // const parsedHistoryXML = await xmlParser.parseXML(bugHistoryFile);
+    // const historyBugs = parsedHistoryXML.pma_xml_export.database[0].table;
+    // const bugsWithHistory = xmlParser.appendBug(bugs, historyBugs);
+    // console.log(`Creating separate XML files for ${bugs.length} bugs with ${historyBugs.length} history bugs....`);
+    // await xmlParser.createSingleXMLFile(bugsWithHistory);
+    // console.log(`Separate XML files for Locus for ${bugs.length} bugs with ${historyBugs.length} history bugs....`);
+    // await xmlParser.createSingleXMLforLocus(bugsWithHistory);
+    // console.log(`Separate XML files created. Running command for each file...`);
+    // await runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum);
+
+    app.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+    })
   //await execCommand(command);
-  console.log("Bug locator completed execution");
   
   //await findAndReadTxtFiles(workingDir);
   }catch(error){
