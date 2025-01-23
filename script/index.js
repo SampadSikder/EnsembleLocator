@@ -4,6 +4,14 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const readline = require('readline');
+const connectDB = require('./database/db.js');
+const dotenv = require('dotenv');
+
+dotenv.config();
+
+connectDB();
+
+
 
 app.use(cors());
 app.use(express.json());

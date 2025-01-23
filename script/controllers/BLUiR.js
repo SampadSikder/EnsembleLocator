@@ -72,7 +72,7 @@ const execCommand = (command)=>{
     
       if (stderr) {
         //console.error(`Error: ${stderr}`);
-        resolve(stdout);
+        resolve(stderr);
         return;
       }
     

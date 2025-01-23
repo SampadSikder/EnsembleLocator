@@ -1,11 +1,35 @@
 
 const { exec } = require('child_process');
-
+const path = require('path');
+const fs = require('fs');
 
 
 const xmlParser = require('./XMLParserAndBuilder.js');
 
 
+
+function cloneRepo(repoUrl, targetDirectory) {
+
+  return new Promise((resolve, reject) => {
+    const repoName = repoUrl.split('/').pop().replace('.git', '');
+    const absoluteTargetDir = path.resolve(targetDirectory);
+    const repoPath = path.join(absoluteTargetDir, repoName);
+    if (!fs.existsSync(targetDirectory)) {
+      fs.mkdirSync(targetDirectory, { recursive: true });
+    }
+      const cloneCommand = `git clone ${repoUrl} ${repoPath}`;
+      console.log(`Cloning repository from ${repoUrl} to ${targetDirectory}`);
+
+      exec(cloneCommand, (cloneErr) => {
+          if (cloneErr) {
+              reject(`Failed to clone repository: ${cloneErr.message}`);
+          } else {
+              console.log(`Repository cloned to ${targetDirectory}`);
+              resolve(path.resolve(repoPath));
+          }
+      });
+  });
+}
 function commitCheckout(directory, file) {
     return xmlParser.parseXML(file)
       .then((results) => {
@@ -24,5 +48,6 @@ function commitCheckout(directory, file) {
   }
 
   module.exports={
-    commitCheckout
+    commitCheckout,
+    cloneRepo
   }
