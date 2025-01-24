@@ -158,33 +158,42 @@ public class Evaluation {
 //		reader.close();
 //		return table;
 //	}
-	public Hashtable<Integer, TreeSet<String>> getFixLinkTable() throws IOException {
-		BufferedReader reader = new BufferedReader(new FileReader(this.workDir + "FixLink.txt"));
-		String line = null;
-		Hashtable<Integer, TreeSet<String>> table = new Hashtable<Integer, TreeSet<String>>();
+public Hashtable<Integer, TreeSet<String>> getFixLinkTable() throws IOException {
+	BufferedReader reader = new BufferedReader(new FileReader(this.workDir + "FixLink.txt"));
+	String line;
+	Hashtable<Integer, TreeSet<String>> table = new Hashtable<>();
 
-		while ((line = reader.readLine()) != null) {
-			String[] valueStrings = line.split("\t");
+	while ((line = reader.readLine()) != null) {
+		// Trim to remove leading and trailing whitespace
+		line = line.trim();
 
-			try {
-				// Check if the first value is a number
-				Integer id = Integer.parseInt(valueStrings[0]);
-				String fileName = valueStrings[1].trim();
-
-				// Add the file name to the hashtable
-				if (!table.containsKey(id)) {
-					table.put(id, new TreeSet<String>());
-				}
-				table.get(id).add(fileName);
-
-			} catch (NumberFormatException e) {
-				// This line does not have a valid ID, so we skip it
-				System.out.println("Skipping line: " + line);
-			}
+		// Skip empty lines
+		if (line.isEmpty()) {
+			continue;
 		}
-		reader.close();
-		return table;
+
+		String[] valueStrings = line.split("\t");
+
+		// Ensure the line has at least two parts
+		if (valueStrings.length < 2) {
+			System.out.println("Skipping malformed line: " + line);
+			continue;
+		}
+
+		try {
+			Integer id = Integer.parseInt(valueStrings[0].trim());
+			String fileName = valueStrings[1].trim();
+
+			// Add the file name to the hashtable
+			table.computeIfAbsent(id, k -> new TreeSet<>()).add(fileName);
+
+		} catch (NumberFormatException e) {
+			System.out.println("Skipping invalid ID line: " + line);
+		}
 	}
+	reader.close();
+	return table;
+}
 
 //	private Rank[] getSortedRank(float[] finalR) {
 //		Rank[] R = new Rank[finalR.length];
