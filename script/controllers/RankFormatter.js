@@ -208,7 +208,7 @@ async function reciprocalRankFusion(folderPath, bugID) {
   }
 
   const documentScores = {};
-  const k = 60;
+  const k = 40;
 
   // Process the specific bugID file
   for (const file of filteredFiles) {

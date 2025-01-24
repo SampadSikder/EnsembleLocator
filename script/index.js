@@ -1,35 +1,35 @@
-const express = require('express');
+const express = require("express");
 const app = express();
-const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
-const readline = require('readline');
-const connectDB = require('./database/db.js');
-const dotenv = require('dotenv');
+const cors = require("cors");
+const path = require("path");
+const fs = require("fs");
+const readline = require("readline");
+const connectDB = require("./database/db.js");
+const dotenv = require("dotenv");
 
 dotenv.config();
 
 connectDB();
 
-
-
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-const routes = require('./routes/route.js');
+const routes = require("./routes/route.js");
 app.use("/", routes);
 
 const port = 8080;
 
+const bugLocatorJar = path.resolve(
+  __dirname,
+  "../BugLocator/classes/buglocator.jar"
+);
 
+const locusJar = path.resolve(__dirname, "../Locus_jar/Locus.jar");
 
-const bugLocatorJar = path.resolve(__dirname, '../BugLocator/classes/buglocator.jar');
+const bluirJar = path.resolve(__dirname, "../BLUiR_jar/BLUiR.jar");
 
-const locusJar = path.resolve(__dirname, '../Locus_jar/Locus.jar');
-
-const bluirJar = path.resolve(__dirname, '../BLUiR_jar/BLUiR.jar');
-
-const amalgamJar = path.resolve(__dirname, '../AmaLgam_jar/AmaLgam.jar');
+const amalgamJar = path.resolve(__dirname, "../AmaLgam_jar/AmaLgam.jar");
 
 // const bugInfoFile = path.resolve("/mnt/c/Users/BS01319/Documents/EnsembleLocator/bug2.xml");
 
@@ -37,41 +37,44 @@ const amalgamJar = path.resolve(__dirname, '../AmaLgam_jar/AmaLgam.jar');
 
 // const alphaValue = 0.2;
 
-const xmlParser = require('./controllers/XMLParserAndBuilder.js');
+const xmlParser = require("./controllers/XMLParserAndBuilder.js");
 
-const bugLocator = require('./controllers/BugLocator.js');
+const bugLocator = require("./controllers/BugLocator.js");
 
-const locus = require('./controllers/Locus.js');
+const locus = require("./controllers/Locus.js");
 
-const gitController = require('./controllers/GitController.js');
+const gitController = require("./controllers/GitController.js");
 
-const bluir = require('./controllers/BLUiR.js');
+const bluir = require("./controllers/BLUiR.js");
 
-const amalgam = require('./controllers/AmaLgam.js');
+const amalgam = require("./controllers/AmaLgam.js");
 
 async function runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum) {
-  const outputDir = path.join(__dirname, './BugReports');
+  const outputDir = path.join(__dirname, "./BugReports");
 
   const files = await fs.promises.readdir(outputDir);
   let locusFlag = false;
   for (const file of files) {
-    if (file.startsWith('locus')) {
+    if (file.startsWith("locus")) {
       locusFlag = true;
-    }else{
+    } else {
       locusFlag = false;
     }
-    if (path.extname(file) === '.xml' && file.startsWith) {
+    if (path.extname(file) === ".xml" && file.startsWith) {
       const filePath = path.join(outputDir, file);
 
       const workingDir = path.resolve(__dirname, `./results/${file}`);
 
-      const outputLogDir = path.resolve(__dirname, `./Logs/${techniqueNum}.txt`);
+      const outputLogDir = path.resolve(
+        __dirname,
+        `./Logs/${techniqueNum}.txt`
+      );
 
       const resultFile = "Result";
 
       const locusWorkingDir = path.join(workingDir, "./Locus");
-      
-      const bugLocatorFlags = `-b ${filePath} -s ${sourceCodeDir} -a ${alphaValue} -w ${workingDir} -n ${resultFile} > ${outputLogDir} `
+
+      const bugLocatorFlags = `-b ${filePath} -s ${sourceCodeDir} -a ${alphaValue} -w ${workingDir} -n ${resultFile} > ${outputLogDir} `;
 
       const command = `java -jar ${bugLocatorJar} ${bugLocatorFlags}`;
 
@@ -84,58 +87,53 @@ async function runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum) {
       const bluirCommand = `java -jar ${bluirJar} ${bugLocatorFlags}`;
 
       const amalgamCommand = `java -jar ${amalgamJar} ${amalgamFlags}`;
-      
+
       try {
-       if(locusFlag == false){
+        if (locusFlag == false) {
           //await gitController.commitCheckout(sourceCodeDir, filePath);
           if (techniqueNum === 1) {
             await bugLocator.execCommand(command);
             await bugLocator.findAndReadTxtFiles(workingDir);
-          }else if (techniqueNum === 3) {
+          } else if (techniqueNum === 3) {
             await bluir.execCommand(bluirCommand);
             await bluir.findAndReadTxtFiles(workingDir);
           } else if (techniqueNum === 4) {
             await amalgam.execCommand(amalgamCommand);
             await amalgam.findAndReadTxtFiles(workingDir);
           } else if (techniqueNum === 5) {
-              await bugLocator.execCommand(command);
-    
-              await bugLocator.findAndReadTxtFiles(workingDir);
-              
-              await bluir.execCommand(bluirCommand);
-     
-              await bluir.findAndReadTxtFiles(workingDir);
-      
-              await amalgam.execCommand(amalgamCommand);
-      
-              await amalgam.findAndReadTxtFiles(workingDir);
-              
-              continue;
-            }
-        }
-     else{
-          if(techniqueNum === 2) {
-          await locus.execCommand(locusCommand);
- 
-          await locus.findAndReadTxtFiles(workingDir);
-          
-          continue;
+            await bugLocator.execCommand(command);
+
+            await bugLocator.findAndReadTxtFiles(workingDir);
+
+            await bluir.execCommand(bluirCommand);
+
+            await bluir.findAndReadTxtFiles(workingDir);
+
+            await amalgam.execCommand(amalgamCommand);
+
+            await amalgam.findAndReadTxtFiles(workingDir);
+
+            continue;
+          }
+        } else {
+          if (techniqueNum === 2) {
+            await locus.execCommand(locusCommand);
+
+            await locus.findAndReadTxtFiles(workingDir);
+
+            continue;
           }
         }
-      
+      } catch (error) {
+        console.error(`Error executing command for ${file}:`, error);
       }
-      catch (error) {
-      console.error(`Error executing command for ${file}:`, error);
+    } else {
+      console.error(`Invalid techniqueNum: ${techniqueNum}`);
     }
-      } else {
-        console.error(`Invalid techniqueNum: ${techniqueNum}`);
-      }
-      
- 
-        //console.log(`Output for ${file}:`, stdout);
-     
-    }
+
+    //console.log(`Output for ${file}:`, stdout);
   }
+}
 
 // const askQuestion = (query) => {
 //   const rl = readline.createInterface({
@@ -184,7 +182,7 @@ async function getInputsFromArgs() {
     bugHistoryFile: null,
     sourceCodeDir: null,
     alphaValue: null,
-    techniqueNum: null
+    techniqueNum: null,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -209,9 +207,17 @@ async function getInputsFromArgs() {
     }
   }
 
-  if (!inputs.bugInfoFile || !inputs.bugHistoryFile || !inputs.sourceCodeDir || inputs.alphaValue === null || inputs.techniqueNum === null) {
+  if (
+    !inputs.bugInfoFile ||
+    !inputs.bugHistoryFile ||
+    !inputs.sourceCodeDir ||
+    inputs.alphaValue === null ||
+    inputs.techniqueNum === null
+  ) {
     console.error("Missing required arguments. Usage:");
-    console.error("node script.js -b <bugInfoFile> -h <bugHistoryFile> -s <sourceCodeDir> -a <alphaValue> -t <techniqueNum :\n1. BugLocator\n2. Locus\n3. BLUiR \n 5.All>");
+    console.error(
+      "node script.js -b <bugInfoFile> -h <bugHistoryFile> -s <sourceCodeDir> -a <alphaValue> -t <techniqueNum :\n1. BugLocator\n2. Locus\n3. BLUiR \n 5.All>"
+    );
     process.exit(1);
   }
 
@@ -226,13 +232,12 @@ async function getInputsFromArgs() {
     bugHistoryFile: inputs.bugHistoryFile,
     sourceCodeDir: inputs.sourceCodeDir,
     alphaValue: inputs.alphaValue,
-    techniqueNum: inputs.techniqueNum
+    techniqueNum: inputs.techniqueNum,
   };
 }
 
-
-const main = async ()=>{
-  try{
+const main = async () => {
+  try {
     // const {bugInfoFile, bugHistoryFile, sourceCodeDir, alphaValue, techniqueNum} = await getInputsFromArgs();
     // const parsedXML = await xmlParser.parseXML(bugInfoFile);
     // const bugs = parsedXML.pma_xml_export.database[0].table;
@@ -247,15 +252,14 @@ const main = async ()=>{
     // await runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum);
 
     app.listen(port, () => {
-        console.log(`Server is running on port ${port}`);
-    })
-  //await execCommand(command);
-  
-  //await findAndReadTxtFiles(workingDir);
-  }catch(error){
-    console.error('An error occurred:', error);
-  }
+      console.log(`Server is running on port ${port}`);
+    });
+    //await execCommand(command);
 
-}
+    //await findAndReadTxtFiles(workingDir);
+  } catch (error) {
+    console.error("An error occurred:", error);
+  }
+};
 
 main();

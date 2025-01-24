@@ -167,9 +167,12 @@ async function handleConfig(req, res) {
   const gitRepoURL = req.body.gitRepoURL;
   const alphaValue = req.body.alphaValue;
   const techniqueNum = req.body.techniqueNum;
-  const bugHistoryFile = req.body.bugHistoryFile;
 
   try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+    const bugHistoryFile = req.file.path;
     // Check if an entry with the same gitRepoURL already exists
     const existingEntry = await git.findOne({ gitRepoURL });
 
