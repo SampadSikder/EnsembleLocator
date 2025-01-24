@@ -2,6 +2,7 @@ const path = require("path");
 const fs = require("fs");
 const readline = require("readline");
 const git = require("../models/git.js");
+const axios = require("axios");
 
 const rankFormatter = require("./RankFormatter.js");
 
@@ -266,22 +267,49 @@ function convertIssueURLToRepoURL(issueURL) {
   return repoURL;
 }
 
-async function handleIssue2(req, res) {
-  try {
-    const bugId = Math.floor(Date.now() / 1000);
-    const issue = req.body;
+async function postGitHubComment(issueUrl, message) {
+  await axios.post(
+    `${issueUrl}/comments`,
+    {
+      body: message,
+    },
+    {
+      headers: {
+        Authorization: `token ${process.env.GITHUB_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+}
 
-    const bugData = await xmlParser.convertIssueToXML(bugId, issue);
+async function processIssue(issueData) {
+  const bugId = Math.floor(Date.now() / 1000);
+  const issue = issueData.issue;
+
+  try {
+    const latestCommitId = await gitController.getLatestCommitId(
+      issueData.sender.login,
+      issueData.repository.name,
+      "main"
+    );
+
+    const bugData = await xmlParser.convertIssueToXML(
+      bugId,
+      issue,
+      latestCommitId
+    );
     const dirPath = path.join(__dirname, "../results");
     await clearDirectory(dirPath);
 
-    const gitRepoURL = convertIssueURLToRepoURL(issue.issueURL);
+    const gitRepoURL = convertIssueURLToRepoURL(issue.html_url);
     const existingEntry = await git.findOne({ gitRepoURL });
 
     if (!existingEntry) {
-      return res
-        .status(400)
-        .json({ message: "Repository is not configured! Please configure it" });
+      await postGitHubComment(
+        issue.html_url,
+        "Error: Repository is not configured! Please configure it."
+      );
+      return;
     }
 
     const { sourceCodeDir, alphaValue, techniqueNum, bugHistoryFile } =
@@ -294,6 +322,8 @@ async function handleIssue2(req, res) {
 
     await xmlParser.createSingleXMLFile(bugsWithHistory);
     await xmlParser.createSingleXMLforLocus(bugsWithHistory);
+
+    console.log("Running algorithm...");
 
     if (techniqueNum === 5) {
       await runCommandForEachFile(sourceCodeDir, alphaValue, 5);
@@ -313,18 +343,133 @@ async function handleIssue2(req, res) {
       score: item.score,
     }));
 
-    res.json({
-      message: "Command ran successfully",
-      results: formattedResults,
-    });
+    const responseMessage = formattedResults
+      .map((result) => `Doc: ${result.doc}, Score: ${result.score}`)
+      .join("\n");
+
+    await postGitHubComment(
+      issue.url,
+      `Issue processed successfully. Here is the possible list of buggy files: \n\n${responseMessage}`
+    );
   } catch (error) {
     console.error("Error processing issue request", error);
-    res.status(500).json({
-      message: "Error processing issue request",
-      error: error.message,
-    });
+    await postGitHubComment(
+      issue.html_url,
+      "Error processing the issue. Please check logs for details."
+    );
   }
 }
+
+async function handleIssue2(req, res) {
+  const eventType = req.body.action;
+
+  if (eventType !== "opened") {
+    return res.status(400).json({ message: "Invalid event type" });
+  }
+
+  res.json({
+    message: "Webhook received successfully, processing in the background...",
+  });
+
+  // Proceed asynchronously
+  processIssue(req.body).catch((error) =>
+    console.error("Error processing issue:", error)
+  );
+}
+
+// async function handleIssue2(req, res) {
+//   const eventType = req.body.action;
+
+//   if (eventType !== "opened") {
+//     return res.status(500).json({ message: "Invalid event type" });
+//   }
+//   try {
+//     res.json({
+//       message: "Webhook received successfully, please wait for result....",
+//     });
+//     const bugId = Math.floor(Date.now() / 1000);
+//     const issue = req.body.issue;
+
+//     const latestCommitId = await gitController.getLatestCommitId(
+//       req.body.sender.login,
+//       req.body.repository.name,
+//       "main"
+//     );
+//     console.log(latestCommitId);
+//     const bugData = await xmlParser.convertIssueToXML(
+//       bugId,
+//       issue,
+//       latestCommitId
+//     );
+//     const dirPath = path.join(__dirname, "../results");
+//     await clearDirectory(dirPath);
+
+//     console.log(bugData);
+
+//     const gitRepoURL = convertIssueURLToRepoURL(issue.html_url);
+//     const existingEntry = await git.findOne({ gitRepoURL });
+
+//     if (!existingEntry) {
+//       return res
+//         .status(400)
+//         .json({ message: "Repository is not configured! Please configure it" });
+//     }
+
+//     const { sourceCodeDir, alphaValue, techniqueNum, bugHistoryFile } =
+//       existingEntry;
+
+//     const bugs = bugData.pma_xml_export.database.table;
+//     const parsedHistoryXML = await xmlParser.parseXML(bugHistoryFile);
+//     const historyBugs = parsedHistoryXML.pma_xml_export.database[0].table;
+//     const bugsWithHistory = xmlParser.appendBug(bugs, historyBugs);
+
+//     await xmlParser.createSingleXMLFile(bugsWithHistory);
+//     await xmlParser.createSingleXMLforLocus(bugsWithHistory);
+
+//     console.log("Running algorithm!");
+
+//     if (techniqueNum === 5) {
+//       await runCommandForEachFile(sourceCodeDir, alphaValue, 5);
+//       await runCommandForEachFile(sourceCodeDir, alphaValue, 2);
+//     } else {
+//       await runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum);
+//     }
+
+//     const results = await rankFormatter.getTopRankedResults(
+//       path.join(__dirname, "../results"),
+//       bugId
+//     );
+
+//     const formattedResults = results.map((item) => ({
+//       rank: item.rank,
+//       doc: item.doc,
+//       score: item.score,
+//     }));
+
+//     // res.json({
+//     //   message: "Command ran successfully",
+//     //   results: formattedResults,
+//     // });
+
+//     const responseMessage = formattedResults
+//       .map(
+//         (result) =>
+//           `Rank: ${result.rank}, Doc: ${result.doc}, Score: ${result.score}`
+//       )
+//       .join("\n");
+
+//     await postGitHubComment(
+//       issue.html_url,
+//       `Issue processed successfully.\n\n${responseMessage}`
+//     );
+//   } catch (error) {
+//     console.error("Error processing issue request", error);
+//     res.status(500).json({
+//       message: "Error processing issue request",
+//       error: error.message,
+//     });
+//   }
+// }
 
 module.exports = {
   handleIssue,

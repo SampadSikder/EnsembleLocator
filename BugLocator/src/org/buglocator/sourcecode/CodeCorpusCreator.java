@@ -24,7 +24,7 @@ public class CodeCorpusCreator
 	{}
 	
 	/**
-	 * ½ÃÀÛ ÇÔ¼ö.
+	 * ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½.
 	 * @throws Exception
 	 */
 	public void create() throws Exception
@@ -42,16 +42,16 @@ public class CodeCorpusCreator
 		
 		//make corpus each file
 		for (File file: files) {
-			Corpus corpus = this.create(file);	//Corpus »ý¼º.
+			Corpus corpus = this.create(file);	//Corpus ï¿½ï¿½ï¿½ï¿½.
 			if (corpus == null)	continue;
 			
-			//file filtering  (Áßº¹¹æÁö)
+			//file filtering  (ï¿½ßºï¿½ï¿½ï¿½ï¿½ï¿½)
 			String FullClassName = corpus.getJavaFileFullClassName();
 			if (projectName.startsWith("ASPECTJ")){
-				FullClassName = file.getPath().substring(codePath.length()); //°æ·Î¸íÀ» ÅëÇÑ ÀÎ½Ä.
+				FullClassName = file.getPath().substring(codePath.length()); //ï¿½ï¿½Î¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Î½ï¿½.
 				FullClassName = FullClassName.replace("\\", "/");
 				if (FullClassName.startsWith("/")) 
-					FullClassName = FullClassName.substring(1); //°æ·Î¸íÀ» ÅëÇÑ ÀÎ½Ä.
+					FullClassName = FullClassName.substring(1); //ï¿½ï¿½Î¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Î½ï¿½.
 				
 			}
 			if (nameSet.contains(FullClassName)) continue;
@@ -75,51 +75,54 @@ public class CodeCorpusCreator
 	}
 	
 	/**
-	 * °¢ ÆÄÀÏ¿¡ ´ëÇØ¼­ corpus¸¦ »ý¼º
+	 * ï¿½ï¿½ ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½Ø¼ï¿½ corpusï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	 * @param file
 	 * @return
 	 */
 	public Corpus create(File file) {
 		FileParser parser = new FileParser(file);
-		
-		//ÆÄÀÏÀÇ ÆÐÅ°Áö Á¤º¸ ¾ò±â
+
+		// Extract file name
 		String fileName = parser.getPackageName();
-		if (fileName.trim().equals("")) {
+		if (fileName.trim().isEmpty()) {
 			fileName = file.getName();
 		} else {
 			fileName = fileName + "." + file.getName();
 		}
-		fileName = fileName.substring(0, fileName.lastIndexOf("."));
-		
-		//content¸¦ ºÐ¸®ÇÏ¿© stemming, removing stopwords ¼öÇà
+
+		// Ensure safe substring operation to remove file extension
+		int lastDotIndex = fileName.lastIndexOf(".");
+		if (lastDotIndex > 0) {
+			fileName = fileName.substring(0, lastDotIndex);
+		}
+
+		// Process content - stemming and removing stopwords
 		String[] content = parser.getContent();
-		StringBuffer contentBuf = new StringBuffer();
-		for (String word : content) {	//camel case ºÐ¸® tokenizeµÈ contentµéÀÓ.
+		StringBuilder contentBuf = new StringBuilder();
+		for (String word : content) {
 			String stemWord = Stem.stem(word.toLowerCase());
-			if ((!Stopword.isKeyword(word)) && (!Stopword.isEnglishStopword(word)))
-			{
-				contentBuf.append(stemWord);
-				contentBuf.append(" ");
+			if ((!Stopword.isKeyword(word)) && (!Stopword.isEnglishStopword(word))) {
+				contentBuf.append(stemWord).append(" ");
 			}
 		}
 		String sourceCodeContent = contentBuf.toString();
-		
-		//Å¬·¡½º¸í, ¸Þ¼Òµå¸í¿¡ ´ëÇØ¼­ º°µµ·Î corpus¸¦ ÇÑ¹ø ´õ »ý¼º.
+
+		// Extract class and method names
 		String[] classNameAndMethodName = parser.getClassNameAndMethodName();
-		StringBuffer nameBuf = new StringBuffer();
-		
-		for (String word: classNameAndMethodName) {			
+		StringBuilder nameBuf = new StringBuilder();
+		for (String word : classNameAndMethodName) {
 			String stemWord = Stem.stem(word.toLowerCase());
-			nameBuf.append(stemWord);
-			nameBuf.append(" ");
+			nameBuf.append(stemWord).append(" ");
 		}
 		String names = nameBuf.toString();
-		
-		//corpus°´Ã¼ »ý¼º.
+
+		// Create Corpus object
 		Corpus corpus = new Corpus();
 		corpus.setJavaFilePath(file.getAbsolutePath());
 		corpus.setJavaFileFullClassName(fileName);
-		corpus.setContent(sourceCodeContent + " " + names);	//content³»¿¡ µÎ corpus°¡ °áÇÕ.
+		corpus.setContent(sourceCodeContent + " " + names);
+
 		return corpus;
 	}
+
 }

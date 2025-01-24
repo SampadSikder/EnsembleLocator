@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';  // Import Axios for API requests
 import 'bootstrap/dist/css/bootstrap.min.css'; // Import Bootstrap styles
 import './App.css';
@@ -10,6 +10,7 @@ function App() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [githubStatus, setGithubStatus] = useState('');
 
   const techniqueMap = {
     BugLocator: 1,
@@ -30,6 +31,13 @@ function App() {
       return;
     }
 
+    const token = new URLSearchParams(window.location.search).get('token');
+    if (!token) {
+      setMessage('Please authenticate with GitHub first.');
+      setLoading(false);
+      return;
+    }
+
     const formData = new FormData();
     formData.append('gitRepoURL', githubRepo);
     formData.append('alphaValue', alphaValue);
@@ -37,13 +45,20 @@ function App() {
     formData.append('bugHistoryFile', file);
 
     try {
+
+      const workflowResponse = await axios.post('http://localhost:8080/api/v1/setup-workflow', {
+        repoUrl: githubRepo,
+        token: sessionStorage.getItem('token'),
+      });
+      setMessage(workflowResponse.data.message || 'Workflow configured successfully, now saving configuration...');
+
       const response = await axios.post('http://localhost:8080/api/config', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Accept': 'application/json'
         },
       });
-      setMessage(response.data.message || 'Configuration saved successfully!');
+      setMessage(response.data.message || 'Configuration saved successfully');
     } catch (error) {
       console.error('Error submitting form:', error);
       setMessage(error.response?.data?.message || 'Error submitting the form');
@@ -52,12 +67,30 @@ function App() {
     }
   };
 
+  const handleGitHubLogin = () => {
+    const clientId = import.meta.env.VITE_CLIENT_ID;
+    const redirectUri = 'http://localhost:8080/auth/callback';
+    const scope = 'repo workflow'; 
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
+    setGithubStatus('Redirecting to GitHub for authentication...');
+  };
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    sessionStorage.setItem('token', token);
+    setMessage("Github is authenticated! Fill up the form");
+  }, []);
+
+
   return (
     <>    
       <div className="container mt-4">
-        <h2>FindYourBug Configuration</h2>
+        <h1>FindYourBug Configuration</h1>
+        <p>Make sure GitHub is connected at first!</p>
+       
         <form onSubmit={handleSubmit}>
-          <div className="form-group mb-4">
+          <div className="form-group mb-5 mt-5">
             <label htmlFor="textField1">Link to Github Repository: </label>
             <input 
               type="text" 
@@ -104,7 +137,13 @@ function App() {
               onChange={(e) => setFile(e.target.files[0])} 
             />
           </div>
-          <button type="submit" className="btn btn-primary" disabled={loading}>
+
+          <button type="button" onClick={handleGitHubLogin} className="btn btn-secondary mt-3 mb-3 me-3">
+            Connect GitHub
+          </button>
+          {githubStatus && <div className="mt-2 alert alert-info">{githubStatus}</div>}
+
+          <button type="submit" className="btn btn-primary mt-3 mb-3 me-3" disabled={loading}>
             {loading ? 'Submitting...' : 'Submit'}
           </button>
         </form>

@@ -22,6 +22,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 const issueHandler = require("../controllers/IssueHandler.js");
+const githubHandler = require("../controllers/GitController.js");
 
 router.post("/api/v1/issues", issueHandler.handleIssue);
 router.post(
@@ -30,5 +31,7 @@ router.post(
   issueHandler.handleConfig
 );
 router.post("/api/v2/issues", issueHandler.handleIssue2);
+router.get("/auth/callback", githubHandler.githubAuthentication);
+router.post("/api/v1/setup-workflow", githubHandler.githubWorkflowSetup);
 
 module.exports = router;
