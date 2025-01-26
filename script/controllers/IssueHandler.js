@@ -170,10 +170,14 @@ async function handleConfig(req, res) {
   const techniqueNum = req.body.techniqueNum;
 
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
+    let bugHistoryFile = null;
+    // if (!req.file) {
+    //   return res.status(400).json({ message: "No file uploaded" });
+    // }
+    //const bugHistoryFile = req.file.path || null;
+    if (req.file) {
+      bugHistoryFile = req.file.path;
     }
-    const bugHistoryFile = req.file.path;
     // Check if an entry with the same gitRepoURL already exists
     const existingEntry = await git.findOne({ gitRepoURL });
 
@@ -315,10 +319,23 @@ async function processIssue(issueData) {
     const { sourceCodeDir, alphaValue, techniqueNum, bugHistoryFile } =
       existingEntry;
 
+    // const bugs = bugData.pma_xml_export.database.table;
+    // const parsedHistoryXML = await xmlParser.parseXML(bugHistoryFile);
+    // const historyBugs = parsedHistoryXML.pma_xml_export.database[0].table;
+    // const bugsWithHistory = xmlParser.appendBug(bugs, historyBugs);
+
     const bugs = bugData.pma_xml_export.database.table;
-    const parsedHistoryXML = await xmlParser.parseXML(bugHistoryFile);
-    const historyBugs = parsedHistoryXML.pma_xml_export.database[0].table;
-    const bugsWithHistory = xmlParser.appendBug(bugs, historyBugs);
+
+    let bugsWithHistory = [...bugs]; // Initialize with existing bugs
+
+    if (bugHistoryFile) {
+      const parsedHistoryXML = await xmlParser.parseXML(bugHistoryFile);
+      const historyBugs = parsedHistoryXML.pma_xml_export.database[0].table;
+
+      if (Array.isArray(historyBugs) && historyBugs.length > 0) {
+        bugsWithHistory = xmlParser.appendBug(bugs, historyBugs);
+      }
+    }
 
     await xmlParser.createSingleXMLFile(bugsWithHistory);
     await xmlParser.createSingleXMLforLocus(bugsWithHistory);
@@ -339,12 +356,15 @@ async function processIssue(issueData) {
 
     const formattedResults = results.map((item) => ({
       rank: item.rank,
-      doc: item.doc,
+      doc: `${issueData.repository.html_url}/${item.doc}`,
       score: item.score,
     }));
 
     const responseMessage = formattedResults
-      .map((result) => `Doc: ${result.doc}, Score: ${result.score}`)
+      .map(
+        (result) =>
+          `Rank: ${result.rank}, File: [${result.doc}](${result.doc}), Score: ${result.score}`
+      )
       .join("\n");
 
     await postGitHubComment(
@@ -354,7 +374,7 @@ async function processIssue(issueData) {
   } catch (error) {
     console.error("Error processing issue request", error);
     await postGitHubComment(
-      issue.html_url,
+      issue.url,
       "Error processing the issue. Please check logs for details."
     );
   }

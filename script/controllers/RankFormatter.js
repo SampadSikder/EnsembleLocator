@@ -238,7 +238,11 @@ async function reciprocalRankFusion(folderPath, bugID) {
 async function getTopRankedResults(folderPath, bugID, topN = 10) {
   console.log("Reading csv files in: " + folderPath);
   const fusionResult = await reciprocalRankFusion(folderPath, bugID);
-  return fusionResult.slice(0, topN);
+  return fusionResult.slice(0, topN).map((item, index) => ({
+    rank: index + 1,
+    doc: item.doc,
+    score: item.score,
+  }));
 }
 async function processBluirOutput(baseDirectory) {
   const inputDirectory = path.join(baseDirectory, "BLUiR_Result/result"); // Replace with the path to your input directory

@@ -7,6 +7,7 @@ function App() {
   const [githubRepo, setGithubRepo] = useState('');
   const [alphaValue, setAlphaValue] = useState('');
   const [technique, setTechnique] = useState('');
+  const [rankFusionMethod, setRankFusionMethod] = useState('');
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -14,10 +15,15 @@ function App() {
 
   const techniqueMap = {
     BugLocator: 1,
-    Locus: 2,
+    'Locus (Needs bug history file)': 2,
     BLUiR: 3,
     AmaLgam: 4,
     All: 5,
+  };
+  const rankFusionMap = {
+    'Reciprocal Rank Fusion': 1,
+    LLM: 2,
+    Both: 3,
   };
 
   const handleSubmit = async (e) => {
@@ -25,8 +31,8 @@ function App() {
     setLoading(true);
     setMessage('');
 
-    if (!githubRepo || !alphaValue || !technique || !file) {
-      setMessage('Please fill all fields and upload a file.');
+    if (!githubRepo || !alphaValue || !technique) {
+      setMessage('Please fill all fields.');
       setLoading(false);
       return;
     }
@@ -42,7 +48,10 @@ function App() {
     formData.append('gitRepoURL', githubRepo);
     formData.append('alphaValue', alphaValue);
     formData.append('techniqueNum', techniqueMap[technique] || null);
-    formData.append('bugHistoryFile', file);
+    formData.append('rankFusionMethodNum', rankFusionMap[rankFusionMethod] || null);
+    if (file) {
+      formData.append('bugHistoryFile', file);
+    }
 
     try {
 
@@ -122,6 +131,22 @@ function App() {
             >
               <option value="">Select a technique</option>
               {Object.keys(techniqueMap).map((key) => (
+                <option key={key} value={key}>
+                  {key}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group mb-4">
+            <label htmlFor="rankFusionDropdown">Select Rank Fusion Method:</label>
+            <select 
+              className="form-control" 
+              id="rankFusionDropdown" 
+              value={rankFusionMethod} 
+              onChange={(e) => setRankFusionMethod(e.target.value)}
+            >
+              <option value="">Select a rank fusion method</option>
+              {Object.keys(rankFusionMap).map((key) => (
                 <option key={key} value={key}>
                   {key}
                 </option>
