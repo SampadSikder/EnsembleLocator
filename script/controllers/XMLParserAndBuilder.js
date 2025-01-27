@@ -31,7 +31,6 @@ function clearDirectory(directory) {
     fs.readdir(directory, (err, files) => {
       if (err) {
         if (err.code === "ENOENT") {
-          console.log(`Directory does not exist: ${directory}`);
           return resolve();
         }
         return reject(err);
@@ -48,7 +47,6 @@ function clearDirectory(directory) {
         )
       )
         .then(() => {
-          console.log(`Cleared directory: ${directory}`);
           resolve();
         })
         .catch(reject);
@@ -230,7 +228,19 @@ const appendBug = function (bugs, historyBugs) {
   return bugs;
 };
 
-async function convertIssueToXML(bugId, issue) {
+function escapeXml(str) {
+  if (!str) return "";
+  return str
+    .replace(/^"|"$/g, "") // Remove surrounding quotes added by JSON.stringify
+    .replace(/&/g, "&amp;") // Escape ampersand
+    .replace(/</g, "&lt;") // Escape less than
+    .replace(/>/g, "&gt;") // Escape greater than
+    .replace(/"/g, "&quot;") // Escape double quotes
+    .replace(/'/g, "&apos;") // Escape single quotes
+    .replace(/\r?\n/g, "&#xD;"); // Convert newlines to XML format (Carriage Return)
+}
+
+async function convertIssueToXML(bugId, issue, latestCommitId) {
   const bugData = {
     pma_xml_export: {
       $: {
@@ -243,24 +253,24 @@ async function convertIssueToXML(bugId, issue) {
             column: [
               { $: { name: "id" }, _: "1" },
               { $: { name: "bug_id" }, _: bugId.toString() },
-              { $: { name: "summary" }, _: issue.issueSummary },
-              { $: { name: "description" }, _: issue.issueDescription },
+              { $: { name: "summary" }, _: escapeXml(issue.title) },
+              {
+                $: { name: "description" },
+                _: escapeXml(issue.body),
+              },
               {
                 $: { name: "report_time" },
-                _: new Date(issue.reportTimestamp * 1000)
-                  .toISOString()
-                  .slice(0, 19)
-                  .replace("T", " "),
+                _: new Date(issue.created_at).getTime() / 1000,
               },
               {
                 $: { name: "report_timestamp" },
-                _: issue.reportTimestamp.toString(),
+                _: new Date(issue.created_at).getTime() / 1000,
               },
               { $: { name: "status" }, _: "open" },
-              { $: { name: "commit" }, _: issue.commit },
+              { $: { name: "commit" }, _: latestCommitId.slice(0, 5) },
               {
                 $: { name: "commit_timestamp" },
-                _: issue.commitTimestamp.toString(),
+                _: new Date(issue.updated_at).getTime() / 1000,
               },
               { $: { name: "files" }, _: "" },
               { $: { name: "result" }, _: "" },

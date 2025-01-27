@@ -1,6 +1,15 @@
 const fs = require("fs");
 const path = require("path");
 const csvParser = require("csv-parser");
+const axios = require("axios");
+const OpenAI = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Initialize OpenAI API
+// const openai = new OpenAI({
+//   baseURL: "https://api.deepseek.com",
+//   apiKey: process.env.DEEPSEEK_API_KEY,
+// });
 
 function convertBluirTxtToCSV(inputFilePath, outputFilePath) {
   try {
@@ -234,11 +243,57 @@ async function reciprocalRankFusion(folderPath, bugID) {
   return result;
 }
 
+async function LLMRankFusion(folderPath, bugID) {
+  const csvFiles = await getAllCSVFiles(folderPath);
+  let promptString = "";
+  const topEntries = 20;
+
+  const filteredFiles = csvFiles.filter(
+    (file) => path.basename(file) === `${bugID}.csv`
+  );
+
+  if (filteredFiles.length === 0) {
+    console.error(`No CSV file found for bugID: ${bugID}`);
+    return [];
+  }
+
+  for (const file of filteredFiles) {
+    const rows = await parseCSV(file);
+
+    promptString += `File: ${path.basename(file)}\n`;
+    rows.slice(0, topEntries).forEach((row) => {
+      promptString += `${row.file}, ${row.rank}, ${row.score}\n`;
+    });
+    promptString += "\n";
+  }
+  promptString +=
+    "Find the most common top 10 between these files. The file structure is file name, rank, score";
+
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API);
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+  result = await model.generateContent(promptString);
+  // const llmQuery = await openai.chat.completions.create({
+  //   messages: [{ role: "system", content: "You are a helpful assistant." }],
+  //   model: "deepseek-chat",
+  // });
+  return result.response.text();
+}
+
 // Function to get top N results from RRF
 async function getTopRankedResults(folderPath, bugID, topN = 10) {
   console.log("Reading csv files in: " + folderPath);
   const fusionResult = await reciprocalRankFusion(folderPath, bugID);
-  return fusionResult.slice(0, topN);
+  return fusionResult.slice(0, topN).map((item, index) => ({
+    rank: index + 1,
+    doc: item.doc,
+    score: item.score,
+  }));
+}
+
+async function getTopRankedResultsLLM(folderPath, bugID) {
+  console.log("Reading csv files in: " + folderPath);
+  const fusionResult = await LLMRankFusion(folderPath, bugID);
+  return fusionResult;
 }
 async function processBluirOutput(baseDirectory) {
   const inputDirectory = path.join(baseDirectory, "BLUiR_Result/result"); // Replace with the path to your input directory
@@ -266,4 +321,5 @@ module.exports = {
   processBuglocatorOutput,
   processLocusOutput,
   getTopRankedResults,
+  getTopRankedResultsLLM,
 };

@@ -2,6 +2,7 @@ const path = require("path");
 const fs = require("fs");
 const readline = require("readline");
 const git = require("../models/git.js");
+const axios = require("axios");
 
 const rankFormatter = require("./RankFormatter.js");
 
@@ -38,7 +39,6 @@ function clearDirectory(directory) {
     fs.readdir(directory, (err, files) => {
       if (err) {
         if (err.code === "ENOENT") {
-          console.log(`Directory does not exist: ${directory}`);
           return resolve();
         }
         return reject(err);
@@ -69,7 +69,6 @@ function clearDirectory(directory) {
         })
       )
         .then(() => {
-          console.log(`Cleared directory: ${directory}`);
           resolve();
         })
         .catch(reject);
@@ -79,7 +78,6 @@ function clearDirectory(directory) {
 
 async function runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum) {
   const outputDir = path.join(__dirname, "../BugReports");
-  //console.log(sourceCodeDir + ' ' + alphaValue + ' ' + techniqueNum);
   const files = await fs.promises.readdir(outputDir);
   let locusFlag = false;
   for (const file of files) {
@@ -167,12 +165,17 @@ async function handleConfig(req, res) {
   const gitRepoURL = req.body.gitRepoURL;
   const alphaValue = req.body.alphaValue;
   const techniqueNum = req.body.techniqueNum;
+  const rankFusionType = req.body.rankFusionMethodNum;
 
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
+    let bugHistoryFile = null;
+    // if (!req.file) {
+    //   return res.status(400).json({ message: "No file uploaded" });
+    // }
+    //const bugHistoryFile = req.file.path || null;
+    if (req.file) {
+      bugHistoryFile = req.file.path;
     }
-    const bugHistoryFile = req.file.path;
     // Check if an entry with the same gitRepoURL already exists
     const existingEntry = await git.findOne({ gitRepoURL });
 
@@ -195,6 +198,7 @@ async function handleConfig(req, res) {
       techniqueNum,
       bugHistoryFile,
       sourceCodeDir,
+      rankFusionType,
     });
 
     await configEntry.save();
@@ -215,7 +219,6 @@ async function handleIssue(req, res) {
 
   try {
     const existingEntry = await git.findOne({ gitRepoURL });
-    console.log(existingEntry);
     if (!existingEntry) {
       return res.status(500).json({
         message: "Repository is not configured! Please configure it",
@@ -233,15 +236,10 @@ async function handleIssue(req, res) {
     const parsedHistoryXML = await xmlParser.parseXML(bugHistoryFile);
     const historyBugs = parsedHistoryXML.pma_xml_export.database[0].table;
     const bugsWithHistory = xmlParser.appendBug(bugs, historyBugs);
-    console.log(
-      `Creating separate XML files for ${bugs.length} bugs with ${historyBugs.length} history bugs....`
-    );
+    console.log(`Starting calculation...`);
     await xmlParser.createSingleXMLFile(bugsWithHistory);
-    console.log(
-      `Separate XML files for Locus for ${bugs.length} bugs with ${historyBugs.length} history bugs....`
-    );
+
     await xmlParser.createSingleXMLforLocus(bugsWithHistory);
-    console.log(`Separate XML files created. Running command for each file...`);
 
     if (techniqueNum === 5) {
       await runCommandForEachFile(sourceCodeDir, alphaValue, 5);
@@ -266,65 +264,246 @@ function convertIssueURLToRepoURL(issueURL) {
   return repoURL;
 }
 
-async function handleIssue2(req, res) {
-  try {
-    const bugId = Math.floor(Date.now() / 1000);
-    const issue = req.body;
+async function postGitHubComment(issueUrl, message) {
+  await axios.post(
+    `${issueUrl}/comments`,
+    {
+      body: message,
+    },
+    {
+      headers: {
+        Authorization: `token ${process.env.GITHUB_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+}
 
-    const bugData = await xmlParser.convertIssueToXML(bugId, issue);
+async function processIssue(issueData) {
+  const bugId = Math.floor(Date.now() / 1000);
+  const issue = issueData.issue;
+
+  try {
+    const latestCommitId = await gitController.getLatestCommitId(
+      issueData.sender.login,
+      issueData.repository.name,
+      "main"
+    );
+
+    const bugData = await xmlParser.convertIssueToXML(
+      bugId,
+      issue,
+      latestCommitId
+    );
     const dirPath = path.join(__dirname, "../results");
     await clearDirectory(dirPath);
 
-    const gitRepoURL = convertIssueURLToRepoURL(issue.issueURL);
+    const gitRepoURL = convertIssueURLToRepoURL(issue.html_url);
     const existingEntry = await git.findOne({ gitRepoURL });
 
     if (!existingEntry) {
-      return res
-        .status(400)
-        .json({ message: "Repository is not configured! Please configure it" });
+      await postGitHubComment(
+        issue.html_url,
+        "Error: Repository is not configured! Please configure it."
+      );
+      return;
     }
 
-    const { sourceCodeDir, alphaValue, techniqueNum, bugHistoryFile } =
-      existingEntry;
+    const {
+      sourceCodeDir,
+      alphaValue,
+      techniqueNum,
+      bugHistoryFile,
+      rankFusionType,
+    } = existingEntry;
+
+    // const bugs = bugData.pma_xml_export.database.table;
+    // const parsedHistoryXML = await xmlParser.parseXML(bugHistoryFile);
+    // const historyBugs = parsedHistoryXML.pma_xml_export.database[0].table;
+    // const bugsWithHistory = xmlParser.appendBug(bugs, historyBugs);
 
     const bugs = bugData.pma_xml_export.database.table;
-    const parsedHistoryXML = await xmlParser.parseXML(bugHistoryFile);
-    const historyBugs = parsedHistoryXML.pma_xml_export.database[0].table;
-    const bugsWithHistory = xmlParser.appendBug(bugs, historyBugs);
+
+    let bugsWithHistory = [...bugs]; // Initialize with existing bugs
+
+    if (bugHistoryFile) {
+      const parsedHistoryXML = await xmlParser.parseXML(bugHistoryFile);
+      const historyBugs = parsedHistoryXML.pma_xml_export.database[0].table;
+
+      if (Array.isArray(historyBugs) && historyBugs.length > 0) {
+        bugsWithHistory = xmlParser.appendBug(bugs, historyBugs);
+      }
+    }
 
     await xmlParser.createSingleXMLFile(bugsWithHistory);
     await xmlParser.createSingleXMLforLocus(bugsWithHistory);
 
+    console.log("Running algorithm...");
+
     if (techniqueNum === 5) {
       await runCommandForEachFile(sourceCodeDir, alphaValue, 5);
-      await runCommandForEachFile(sourceCodeDir, alphaValue, 2);
+      //await runCommandForEachFile(sourceCodeDir, alphaValue, 2);
     } else {
       await runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum);
     }
 
-    const results = await rankFormatter.getTopRankedResults(
-      path.join(__dirname, "../results"),
-      bugId
-    );
+    console.log("Finished algorithm running fusion : " + rankFusionType);
 
-    const formattedResults = results.map((item) => ({
-      rank: item.rank,
-      doc: item.doc,
-      score: item.score,
-    }));
+    if (rankFusionType === 0 || rankFusionType === 1 || rankFusionType === 3) {
+      console.log("Calculation Reciprocal Rank Fusion");
+      const results = await rankFormatter.getTopRankedResults(
+        path.join(__dirname, "../results"),
+        bugId
+      );
 
-    res.json({
-      message: "Command ran successfully",
-      results: formattedResults,
-    });
+      const formattedResults = results.map((item) => ({
+        rank: item.rank,
+        doc: `${issueData.repository.html_url}/${item.doc}`,
+        score: item.score,
+      }));
+
+      const responseMessage = formattedResults
+        .map(
+          (result) =>
+            `Rank: ${result.rank}, File: [${result.doc}](${result.doc}), Score: ${result.score}`
+        )
+        .join("\n");
+
+      console.log("Posting rank fusion in Github...");
+      await postGitHubComment(
+        issue.url,
+        `Issue processed successfully. Here is the possible list of buggy files: \n\n${responseMessage}`
+      );
+    }
+    if (rankFusionType === 2 || rankFusionType === 3) {
+      console.log("Calculation LLM Rank Fusion");
+
+      const llmResponse = await rankFormatter.getTopRankedResultsLLM(
+        path.join(__dirname, "../results"),
+        bugId
+      );
+      console.log("Posting LLM Fusion in Github...");
+      await postGitHubComment(issue.url, `${llmResponse}`);
+    }
   } catch (error) {
     console.error("Error processing issue request", error);
-    res.status(500).json({
-      message: "Error processing issue request",
-      error: error.message,
-    });
+    await postGitHubComment(
+      issue.url,
+      "Error processing the issue. Please check logs for details."
+    );
   }
 }
+
+async function handleIssue2(req, res) {
+  const eventType = req.body.action;
+
+  if (eventType !== "opened") {
+    return res.status(400).json({ message: "Invalid event type" });
+  }
+
+  res.json({
+    message: "Webhook received successfully, processing in the background...",
+  });
+
+  // Proceed asynchronously
+  processIssue(req.body).catch((error) =>
+    console.error("Error processing issue:", error)
+  );
+}
+
+// async function handleIssue2(req, res) {
+//   const eventType = req.body.action;
+
+//   if (eventType !== "opened") {
+//     return res.status(500).json({ message: "Invalid event type" });
+//   }
+//   try {
+//     res.json({
+//       message: "Webhook received successfully, please wait for result....",
+//     });
+//     const bugId = Math.floor(Date.now() / 1000);
+//     const issue = req.body.issue;
+
+//     const latestCommitId = await gitController.getLatestCommitId(
+//       req.body.sender.login,
+//       req.body.repository.name,
+//       "main"
+//     );
+//     console.log(latestCommitId);
+//     const bugData = await xmlParser.convertIssueToXML(
+//       bugId,
+//       issue,
+//       latestCommitId
+//     );
+//     const dirPath = path.join(__dirname, "../results");
+//     await clearDirectory(dirPath);
+
+//     console.log(bugData);
+
+//     const gitRepoURL = convertIssueURLToRepoURL(issue.html_url);
+//     const existingEntry = await git.findOne({ gitRepoURL });
+
+//     if (!existingEntry) {
+//       return res
+//         .status(400)
+//         .json({ message: "Repository is not configured! Please configure it" });
+//     }
+
+//     const { sourceCodeDir, alphaValue, techniqueNum, bugHistoryFile } =
+//       existingEntry;
+
+//     const bugs = bugData.pma_xml_export.database.table;
+//     const parsedHistoryXML = await xmlParser.parseXML(bugHistoryFile);
+//     const historyBugs = parsedHistoryXML.pma_xml_export.database[0].table;
+//     const bugsWithHistory = xmlParser.appendBug(bugs, historyBugs);
+
+//     await xmlParser.createSingleXMLFile(bugsWithHistory);
+//     await xmlParser.createSingleXMLforLocus(bugsWithHistory);
+
+//     console.log("Running algorithm!");
+
+//     if (techniqueNum === 5) {
+//       await runCommandForEachFile(sourceCodeDir, alphaValue, 5);
+//       await runCommandForEachFile(sourceCodeDir, alphaValue, 2);
+//     } else {
+//       await runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum);
+//     }
+
+//     const results = await rankFormatter.getTopRankedResults(
+//       path.join(__dirname, "../results"),
+//       bugId
+//     );
+
+//     const formattedResults = results.map((item) => ({
+//       rank: item.rank,
+//       doc: item.doc,
+//       score: item.score,
+//     }));
+
+//     // res.json({
+//     //   message: "Command ran successfully",
+//     //   results: formattedResults,
+//     // });
+
+//     const responseMessage = formattedResults
+//       .map(
+//         (result) =>
+//           `Rank: ${result.rank}, Doc: ${result.doc}, Score: ${result.score}`
+//       )
+//       .join("\n");
+
+//     await postGitHubComment(
+//       issue.html_url,
+//       `Issue processed successfully.\n\n${responseMessage}`
+//     );
+//   } catch (error) {
+//     console.error("Error processing issue request", error);
+//     res.status(500).json({
+//       message: "Error processing issue request",
+//       error: error.message,
+//     });
+//   }
+// }
 
 module.exports = {
   handleIssue,
