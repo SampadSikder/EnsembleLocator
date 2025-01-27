@@ -39,7 +39,6 @@ function clearDirectory(directory) {
     fs.readdir(directory, (err, files) => {
       if (err) {
         if (err.code === "ENOENT") {
-          console.log(`Directory does not exist: ${directory}`);
           return resolve();
         }
         return reject(err);
@@ -70,7 +69,6 @@ function clearDirectory(directory) {
         })
       )
         .then(() => {
-          console.log(`Cleared directory: ${directory}`);
           resolve();
         })
         .catch(reject);
@@ -80,7 +78,6 @@ function clearDirectory(directory) {
 
 async function runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum) {
   const outputDir = path.join(__dirname, "../BugReports");
-  //console.log(sourceCodeDir + ' ' + alphaValue + ' ' + techniqueNum);
   const files = await fs.promises.readdir(outputDir);
   let locusFlag = false;
   for (const file of files) {
@@ -168,6 +165,7 @@ async function handleConfig(req, res) {
   const gitRepoURL = req.body.gitRepoURL;
   const alphaValue = req.body.alphaValue;
   const techniqueNum = req.body.techniqueNum;
+  const rankFusionType = req.body.rankFusionMethodNum;
 
   try {
     let bugHistoryFile = null;
@@ -200,6 +198,7 @@ async function handleConfig(req, res) {
       techniqueNum,
       bugHistoryFile,
       sourceCodeDir,
+      rankFusionType,
     });
 
     await configEntry.save();
@@ -220,7 +219,6 @@ async function handleIssue(req, res) {
 
   try {
     const existingEntry = await git.findOne({ gitRepoURL });
-    console.log(existingEntry);
     if (!existingEntry) {
       return res.status(500).json({
         message: "Repository is not configured! Please configure it",
@@ -238,15 +236,10 @@ async function handleIssue(req, res) {
     const parsedHistoryXML = await xmlParser.parseXML(bugHistoryFile);
     const historyBugs = parsedHistoryXML.pma_xml_export.database[0].table;
     const bugsWithHistory = xmlParser.appendBug(bugs, historyBugs);
-    console.log(
-      `Creating separate XML files for ${bugs.length} bugs with ${historyBugs.length} history bugs....`
-    );
+    console.log(`Starting calculation...`);
     await xmlParser.createSingleXMLFile(bugsWithHistory);
-    console.log(
-      `Separate XML files for Locus for ${bugs.length} bugs with ${historyBugs.length} history bugs....`
-    );
+
     await xmlParser.createSingleXMLforLocus(bugsWithHistory);
-    console.log(`Separate XML files created. Running command for each file...`);
 
     if (techniqueNum === 5) {
       await runCommandForEachFile(sourceCodeDir, alphaValue, 5);
@@ -316,8 +309,13 @@ async function processIssue(issueData) {
       return;
     }
 
-    const { sourceCodeDir, alphaValue, techniqueNum, bugHistoryFile } =
-      existingEntry;
+    const {
+      sourceCodeDir,
+      alphaValue,
+      techniqueNum,
+      bugHistoryFile,
+      rankFusionType,
+    } = existingEntry;
 
     // const bugs = bugData.pma_xml_export.database.table;
     // const parsedHistoryXML = await xmlParser.parseXML(bugHistoryFile);
@@ -344,33 +342,49 @@ async function processIssue(issueData) {
 
     if (techniqueNum === 5) {
       await runCommandForEachFile(sourceCodeDir, alphaValue, 5);
-      await runCommandForEachFile(sourceCodeDir, alphaValue, 2);
+      //await runCommandForEachFile(sourceCodeDir, alphaValue, 2);
     } else {
       await runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum);
     }
 
-    const results = await rankFormatter.getTopRankedResults(
-      path.join(__dirname, "../results"),
-      bugId
-    );
+    console.log("Finished algorithm running fusion : " + rankFusionType);
 
-    const formattedResults = results.map((item) => ({
-      rank: item.rank,
-      doc: `${issueData.repository.html_url}/${item.doc}`,
-      score: item.score,
-    }));
+    if (rankFusionType === 0 || rankFusionType === 1 || rankFusionType === 3) {
+      console.log("Calculation Reciprocal Rank Fusion");
+      const results = await rankFormatter.getTopRankedResults(
+        path.join(__dirname, "../results"),
+        bugId
+      );
 
-    const responseMessage = formattedResults
-      .map(
-        (result) =>
-          `Rank: ${result.rank}, File: [${result.doc}](${result.doc}), Score: ${result.score}`
-      )
-      .join("\n");
+      const formattedResults = results.map((item) => ({
+        rank: item.rank,
+        doc: `${issueData.repository.html_url}/${item.doc}`,
+        score: item.score,
+      }));
 
-    await postGitHubComment(
-      issue.url,
-      `Issue processed successfully. Here is the possible list of buggy files: \n\n${responseMessage}`
-    );
+      const responseMessage = formattedResults
+        .map(
+          (result) =>
+            `Rank: ${result.rank}, File: [${result.doc}](${result.doc}), Score: ${result.score}`
+        )
+        .join("\n");
+
+      console.log("Posting rank fusion in Github...");
+      await postGitHubComment(
+        issue.url,
+        `Issue processed successfully. Here is the possible list of buggy files: \n\n${responseMessage}`
+      );
+    }
+    if (rankFusionType === 2 || rankFusionType === 3) {
+      console.log("Calculation LLM Rank Fusion");
+
+      const llmResponse = await rankFormatter.getTopRankedResultsLLM(
+        path.join(__dirname, "../results"),
+        bugId
+      );
+      console.log("Posting LLM Fusion in Github...");
+      await postGitHubComment(issue.url, `${llmResponse}`);
+    }
   } catch (error) {
     console.error("Error processing issue request", error);
     await postGitHubComment(

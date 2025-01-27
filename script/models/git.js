@@ -25,7 +25,6 @@ const gitSchema = new mongoose.Schema(
     rankFusionType: {
       type: Number,
       required: false,
-      default: 0,
     },
   },
   {

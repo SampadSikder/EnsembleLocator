@@ -31,7 +31,6 @@ function clearDirectory(directory) {
     fs.readdir(directory, (err, files) => {
       if (err) {
         if (err.code === "ENOENT") {
-          console.log(`Directory does not exist: ${directory}`);
           return resolve();
         }
         return reject(err);
@@ -48,7 +47,6 @@ function clearDirectory(directory) {
         )
       )
         .then(() => {
-          console.log(`Cleared directory: ${directory}`);
           resolve();
         })
         .catch(reject);

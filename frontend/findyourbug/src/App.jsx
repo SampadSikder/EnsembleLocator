@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';  // Import Axios for API requests
 import 'bootstrap/dist/css/bootstrap.min.css'; // Import Bootstrap styles
 import './App.css';
+import logo from './logo.jpg';
 
 function App() {
   const [githubRepo, setGithubRepo] = useState('');
@@ -22,8 +23,8 @@ function App() {
   };
   const rankFusionMap = {
     'Reciprocal Rank Fusion': 1,
-    LLM: 2,
-    Both: 3,
+    'LLM': 2,
+    'Both': 3,
   };
 
   const handleSubmit = async (e) => {
@@ -31,7 +32,7 @@ function App() {
     setLoading(true);
     setMessage('');
 
-    if (!githubRepo || !alphaValue || !technique) {
+    if (!githubRepo || !alphaValue || !technique || !rankFusionMethod) {
       setMessage('Please fill all fields.');
       setLoading(false);
       return;
@@ -43,6 +44,7 @@ function App() {
       setLoading(false);
       return;
     }
+    console.log(rankFusionMap[rankFusionMethod])
 
     const formData = new FormData();
     formData.append('gitRepoURL', githubRepo);
@@ -52,6 +54,7 @@ function App() {
     if (file) {
       formData.append('bugHistoryFile', file);
     }
+    
 
     try {
 
@@ -96,7 +99,14 @@ function App() {
     <>    
       <div className="container mt-4">
         <h1>FindYourBug Configuration</h1>
-        <p>Make sure GitHub is connected at first!</p>
+        <div className="text-center">
+        <img 
+    src={logo} 
+    alt="FindYourBug Logo" 
+    className="img-fluid mb-4 rounded-circle" 
+    style={{ maxWidth: '150px', maxHeight: '150px', border: '2px solid #ddd' }} 
+  />
+</div>
        
         <form onSubmit={handleSubmit}>
           <div className="form-group mb-5 mt-5">
@@ -154,7 +164,7 @@ function App() {
             </select>
           </div>
           <div className="form-group mb-4">
-            <label htmlFor="fileUpload mt-4">Upload Bug History Report (XML report): </label>
+            <label htmlFor="fileUpload mt-4">Upload Historical Bug Report in XML Format (Optional):           </label>
             <input 
               type="file" 
               className="form-control-file" 
@@ -162,6 +172,8 @@ function App() {
               onChange={(e) => setFile(e.target.files[0])} 
             />
           </div>
+          <p>Before submission, make sure GitHub is connected!</p>
+
 
           <button type="button" onClick={handleGitHubLogin} className="btn btn-secondary mt-3 mb-3 me-3">
             Connect GitHub
