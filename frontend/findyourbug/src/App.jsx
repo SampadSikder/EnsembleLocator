@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';  // Import Axios for API requests
 import 'bootstrap/dist/css/bootstrap.min.css'; // Import Bootstrap styles
 import './App.css';
+import { Github, Upload } from "lucide-react"
 import logo from './logo.jpg';
-
 function App() {
   const [githubRepo, setGithubRepo] = useState('');
   const [alphaValue, setAlphaValue] = useState('');
@@ -96,10 +96,10 @@ function App() {
 
 
   return (
-    <>    
-      <div className="container mt-4">
-        <h1>FindYourBug Configuration</h1>
-        <div className="text-center">
+    <div className="min-h-screen flex flex-col items-center px-4 py-12 bg-white">
+      <h1 className="text-2xl font-semibold mb-12">FindYourBug</h1>
+
+    <div className="text-center">
         <img 
     src={logo} 
     alt="FindYourBug Logo" 
@@ -107,87 +107,114 @@ function App() {
     style={{ maxWidth: '150px', maxHeight: '150px', border: '2px solid #ddd' }} 
   />
 </div>
+
+<div className="w-[400px] h-[600px] bg-gray-50 shadow-md rounded-lg p-6">
+        <div className="text-center mb-12">
+          <p className="text-gray-600">Set up your bug finding parameters</p>
        
-        <form onSubmit={handleSubmit}>
-          <div className="form-group mb-5 mt-5">
-            <label htmlFor="textField1">Link to Github Repository: </label>
-            <input 
-              type="text" 
-              className="form-control" 
-              id="textField1" 
-              placeholder="Github Repository" 
-              value={githubRepo} 
-              onChange={(e) => setGithubRepo(e.target.value)} 
-            />
-          </div>
-          <div className="form-group mb-4">
-            <label htmlFor="textField2">Enter alpha value: </label>
-            <input 
-              type="text" 
-              className="form-control" 
-              id="textField2" 
-              placeholder="Enter alpha value" 
-              value={alphaValue} 
-              onChange={(e) => setAlphaValue(e.target.value)} 
-            />
-          </div>
-          <div className="form-group mb-4">
-            <label htmlFor="dropdown">Select technique type:</label>
-            <select 
-              className="form-control" 
-              id="dropdown" 
-              value={technique} 
-              onChange={(e) => setTechnique(e.target.value)}
+    </div>
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <div>
+          <label className="block text-sm font-bold mt-3 mb-2 text-left">GitHub Repository URL</label>
+          <input
+            type="text"
+            value={githubRepo}
+            onChange={(e) => setGithubRepo(e.target.value)}
+            placeholder="https://github.com/username/repo"
+            className="mb-6 w-full p-2 border rounded focus:outline-none focus:border-gray-400"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold mt-3 mb-2 text-left">Alpha Value</label>
+          <input
+            type="text"
+            value={alphaValue}
+            onChange={(e) => setAlphaValue(e.target.value)}
+            placeholder="Enter alpha value (default is 0.2)"
+            className="w-full p-2 border rounded focus:outline-none focus:border-gray-400"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold mt-3 mb-2 text-left">Technique</label>
+          <select
+            value={technique}
+            onChange={(e) => setTechnique(e.target.value)}
+            className="w-full p-2 border rounded focus:outline-none focus:border-gray-400"
+          >
+            <option value="">Select a technique</option>
+            {Object.keys(techniqueMap).map((key) => (
+              <option key={key} value={key}>
+                {key}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold mt-3 mb-2 text-left">Rank Fusion Method</label>
+          <select
+            value={rankFusionMethod}
+            onChange={(e) => setRankFusionMethod(e.target.value)}
+            className="w-full p-2 border rounded focus:outline-none focus:border-gray-400"
+          >
+            <option value="">Select a rank fusion method</option>
+            {Object.keys(rankFusionMap).map((key) => (
+              <option key={key} value={key}>
+                {key}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold mt-3 mb-2 text-left">Historical Bug Report (XML)</label>
+          <div className="flex items-center space-x-3">
+            <button
+              type="button"
+              onClick={() => document.getElementById("fileUpload").click()}
+              className="px-4 py-2 border rounded text-sm hover:bg-gray-50"
             >
-              <option value="">Select a technique</option>
-              {Object.keys(techniqueMap).map((key) => (
-                <option key={key} value={key}>
-                  {key}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="form-group mb-4">
-            <label htmlFor="rankFusionDropdown">Select Rank Fusion Method:</label>
-            <select 
-              className="form-control" 
-              id="rankFusionDropdown" 
-              value={rankFusionMethod} 
-              onChange={(e) => setRankFusionMethod(e.target.value)}
-            >
-              <option value="">Select a rank fusion method</option>
-              {Object.keys(rankFusionMap).map((key) => (
-                <option key={key} value={key}>
-                  {key}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="form-group mb-4">
-            <label htmlFor="fileUpload mt-4">Upload Historical Bug Report in XML Format (Optional):           </label>
-            <input 
-              type="file" 
-              className="form-control-file" 
-              id="fileUpload" 
-              onChange={(e) => setFile(e.target.files[0])} 
+              <Upload className="inline-block w-4 h-4 mr-2 mt-3" />
+              Choose File
+            </button>
+            <span className="text-sm text-gray-500">{file ? file.name : "No file chosen"}</span>
+            <input
+              id="fileUpload"
+              type="file"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              className="hidden"
             />
           </div>
-          <p>Before submission, make sure GitHub is connected!</p>
+        </div>
 
+        <button
+          type="button"
+          onClick={handleGitHubLogin}
+          className="w-full p-2 mb-3 border rounded text-sm hover:bg-gray-50 flex items-center justify-center"
+        >
+          <Github className="w-4 h-4 mr-2" />
+          Connect GitHub
+        </button>
 
-          <button type="button" onClick={handleGitHubLogin} className="btn btn-secondary mt-3 mb-3 me-3">
-            Connect GitHub
-          </button>
-          {githubStatus && <div className="mt-2 alert alert-info">{githubStatus}</div>}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full p-2 bg-black text-white rounded text-sm hover:bg-gray-800 disabled:opacity-50"
+        >
+          {loading ? "Submitting..." : "Submit"}
+        </button>
+      </form>
 
-          <button type="submit" className="btn btn-primary mt-3 mb-3 me-3" disabled={loading}>
-            {loading ? 'Submitting...' : 'Submit'}
-          </button>
-        </form>
-
-        {message && <div className="mt-3 alert alert-info">{message}</div>}
-      </div>
-    </>
+      {message && (
+        <div className="mt-8 p-4 border rounded">
+          <h3 className="text-lg font-medium mb-2">Status</h3>
+          <p className="text-sm">{message}</p>
+        </div>
+      )}
+    </div>
+    </div>
   );
 }
 

@@ -27,8 +27,6 @@ function convertBluirTxtToCSV(inputFilePath, outputFilePath) {
 
     const csvContent = csvLines.join("\n");
     fs.writeFileSync(outputFilePath, csvContent);
-
-    console.log(`CSV file created successfully: ${outputFilePath}`);
   } catch (error) {
     console.error(`Error processing file ${inputFilePath}:`, error.message);
   }
