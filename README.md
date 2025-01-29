@@ -68,14 +68,9 @@ GITHUB_TOKEN=<Your GitHub Personal Access Token>
   ```
 
 ## Project Workflow
-
 - Start the backend:
-  ```
-npm start
-  ```
+  ```npm start```
 - Start the frontend:
-  ```
-npm run dev
-  ```
+  ```npm run dev```
 
 This starts the project on http://localhost:5137. Backend runs on http://localhost:8080.
