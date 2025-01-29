@@ -3,6 +3,7 @@ const fs = require("fs");
 const readline = require("readline");
 const git = require("../models/git.js");
 const axios = require("axios");
+const { Worker } = require("worker_threads");
 
 const rankFormatter = require("./RankFormatter.js");
 
@@ -340,9 +341,39 @@ async function processIssue(issueData) {
 
     console.log("Running algorithm...");
 
+    // if (techniqueNum === 5) {
+    //   await runCommandForEachFile(sourceCodeDir, alphaValue, 5);
+    //   //await runCommandForEachFile(sourceCodeDir, alphaValue, 2);
+    // } else {
+    //   await runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum);
+    // }
+
+    const runCommandInThread = (techniqueNum) => {
+      return new Promise((resolve, reject) => {
+        const worker = new Worker(path.join(__dirname, "Worker.js"), {
+          workerData: { sourceCodeDir, alphaValue, techniqueNum },
+        });
+
+        worker.on("message", (result) => {
+          if (result.success)
+            resolve(`Technique ${techniqueNum} executed successfully`);
+          else reject(`Technique ${techniqueNum} failed: ${result.error}`);
+        });
+
+        worker.on("error", reject);
+        worker.on("exit", (code) => {
+          if (code !== 0) reject(`Worker stopped with exit code ${code}`);
+        });
+      });
+    };
+
+    const tasks = [];
+
     if (techniqueNum === 5) {
-      await runCommandForEachFile(sourceCodeDir, alphaValue, 5);
-      //await runCommandForEachFile(sourceCodeDir, alphaValue, 2);
+      tasks.push(runCommandInThread(1));
+      tasks.push(runCommandInThread(3));
+      await Promise.all(tasks);
+      await runCommandForEachFile(sourceCodeDir, alphaValue, 4);
     } else {
       await runCommandForEachFile(sourceCodeDir, alphaValue, techniqueNum);
     }

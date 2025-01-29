@@ -1,9 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 const csvParser = require("csv-parser");
-const axios = require("axios");
-const OpenAI = require("openai");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { axios } = require("axios");
 
 // Initialize OpenAI API
 // const openai = new OpenAI({
@@ -27,8 +26,6 @@ function convertBluirTxtToCSV(inputFilePath, outputFilePath) {
 
     const csvContent = csvLines.join("\n");
     fs.writeFileSync(outputFilePath, csvContent);
-
-    console.log(`CSV file created successfully: ${outputFilePath}`);
   } catch (error) {
     console.error(`Error processing file ${inputFilePath}:`, error.message);
   }
@@ -267,16 +264,48 @@ async function LLMRankFusion(folderPath, bugID) {
     promptString += "\n";
   }
   promptString +=
-    "Find the most common top 10 between these files. The file structure is file name, rank, score";
+    "Find the most common top 10 between these files. The file structure is file name, rank, score. Format the structured output as a list of files. For each file, include\n- File name\n- rank\n- score";
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API);
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
   result = await model.generateContent(promptString);
-  // const llmQuery = await openai.chat.completions.create({
-  //   messages: [{ role: "system", content: "You are a helpful assistant." }],
-  //   model: "deepseek-chat",
-  // });
-  return result.response.text();
+  const responseText = result.response.text();
+  return responseText;
+}
+
+async function formatResponse(response) {
+  const langsmithEndpoint = "https://api.smith.langchain.com";
+  const apiKey = process.env.LANGSMITH_API_KEY;
+
+  try {
+    // Define the payload
+    const payload = {
+      model: "gpt-3.5-turbo",
+      input: response,
+      instructions: `Format the output as a structured list of files. For each file, include:
+      - File name
+      - Any associated metadata (if available)
+      - Description of the file's contents.`,
+    };
+
+    // Send the API request
+    const responseText = await axios.post(langsmithEndpoint, payload, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+
+    // Handle the response
+    const formattedOutput = responseText.data.output; // Adjust based on LangSmith's API response structure
+    return formattedOutput;
+  } catch (error) {
+    console.error(
+      "Error calling LangSmith API:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
 }
 
 // Function to get top N results from RRF
@@ -322,4 +351,5 @@ module.exports = {
   processLocusOutput,
   getTopRankedResults,
   getTopRankedResultsLLM,
+  formatResponse,
 };
