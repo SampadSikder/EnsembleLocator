@@ -176,7 +176,6 @@ function cloneRepo(repoUrl, targetDirectory) {
       fs.mkdirSync(targetDirectory, { recursive: true });
     }
 
-    // Check if repository already exists
     if (fs.existsSync(path.join(repoPath, ".git"))) {
       console.log(`Repository already exists at ${repoPath}`);
       resolve(repoPath);
