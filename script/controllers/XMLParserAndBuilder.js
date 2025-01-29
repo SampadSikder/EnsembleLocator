@@ -215,16 +215,13 @@ function createSingleXMLforLocus(bugs) {
   });
 }
 
-//Function to append history bugs to bug
 const appendBug = function (bugs, historyBugs) {
   if (!Array.isArray(bugs) || !Array.isArray(historyBugs)) {
     throw new Error("Both 'bugs' and 'historyBugs' must be arrays.");
   }
 
-  // Append historyBugs to bugs
   bugs.push(...historyBugs);
 
-  // Return the updated bugs object
   return bugs;
 };
 

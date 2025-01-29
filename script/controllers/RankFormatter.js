@@ -17,10 +17,10 @@ function convertBluirTxtToCSV(inputFilePath, outputFilePath) {
     // Process the input to convert it to CSV format
     const lines = inputText.trim().split("\n");
     const csvLines = lines.map((line) => {
-      const parts = line.split(/\s+/); // Split by whitespace
-      const className = parts[2]; // Class name is after Q0
-      const rank = parts[3]; // Rank is next
-      const score = parts[4]; // Score is next
+      const parts = line.split(/\s+/);
+      const className = parts[2];
+      const rank = parts[3];
+      const score = parts[4];
       return `${className},${rank},${score}`;
     });
 
@@ -39,10 +39,10 @@ function convertBuglocatorTxtToCSV(inputFilePath, outputFilePath) {
     // Process the input to convert it to CSV format
     const lines = inputText.trim().split("\n");
     const csvLines = lines.map((line) => {
-      const parts = line.split("\t"); // Split by tab
-      const rank = parts[0]; // Rank is the first column
-      const score = parts[1]; // Score is the second column
-      const className = parts[2]; // ClassName is the third column
+      const parts = line.split("\t");
+      const rank = parts[0];
+      const score = parts[1];
+      const className = parts[2];
       return `${className},${rank},${score}`;
     });
 
@@ -64,10 +64,10 @@ function convertLocusTxtToCSV(inputFilePath, outputFilePath) {
     // Process the input to convert it to CSV format
     const lines = inputText.trim().split("\n");
     const csvLines = lines.map((line) => {
-      const parts = line.split("\t"); // Split by tab
-      const rank = parts[0]; // Rank is the first column
-      const score = parts[1]; // Score is the second column
-      const className = parts[2]; // ClassName is the third column
+      const parts = line.split("\t");
+      const rank = parts[0];
+      const score = parts[1];
+      const className = parts[2];
       return `${className},${rank},${score}`;
     });
 
@@ -156,7 +156,6 @@ function processAllBluirTxtFilesInDirectory(inputDir, outputDir) {
   }
 }
 
-// Function to parse a CSV file and return its contents as an array of objects
 async function parseCSV(filePath) {
   const rows = [];
   return new Promise((resolve, reject) => {
@@ -171,7 +170,6 @@ async function parseCSV(filePath) {
   });
 }
 
-// Function to get all CSV files from a directory and its subdirectories
 async function getAllCSVFiles(folderPath) {
   let csvFiles = [];
   try {
