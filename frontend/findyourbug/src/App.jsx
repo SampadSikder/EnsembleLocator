@@ -31,6 +31,8 @@ function App() {
     e.preventDefault();
     setLoading(true);
     setMessage('');
+    console.log(file);
+
 
     if (!githubRepo || !alphaValue || !technique || !rankFusionMethod) {
       setMessage('Please fill all fields.');
@@ -63,7 +65,6 @@ function App() {
         token: sessionStorage.getItem('token'),
       });
       setMessage(workflowResponse.data.message || 'Workflow configured successfully, now saving configuration...');
-
       const response = await axios.post('http://localhost:8080/api/config', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -192,7 +193,7 @@ function App() {
         <button
           type="button"
           onClick={handleGitHubLogin}
-          className="w-full p-2 mb-3 border rounded text-sm hover:bg-gray-50 flex items-center justify-center"
+          className="w-full p-2 mb-3 mt-3 border rounded text-sm hover:bg-gray-50 flex items-center justify-center"
         >
           <Github className="w-4 h-4 mr-2" />
           Connect GitHub

@@ -371,7 +371,6 @@ async function processIssue(issueData) {
 
     if (techniqueNum === 5) {
       tasks.push(runCommandInThread(1));
-      //tasks.push(runCommandInThread(2));
       tasks.push(runCommandInThread(3));
       await Promise.all(tasks);
       await runCommandForEachFile(sourceCodeDir, alphaValue, 4);
