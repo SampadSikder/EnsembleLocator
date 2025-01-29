@@ -16,10 +16,66 @@ Several static techniques exist to localize bugs, for example:
 Each of these techniques has varying degrees of accuracy, along with distinct advantages and disadvantages in localizing bugs. An ensemble approach that combines these techniques can greatly enhance fault localization. The objective of this project is to develop a GitHub plugin/extension that utilizes this ensemble approach to generate a ranked list of buggy files based on GitHub issues.
 
 # How to run
+## Prerequisites
 
-- Navigate to script folder
-- Run 
-  ```npm install```
-- Run
-  ```node index.js```
-- Specify bug report, source code directory and alpha value
+Node.js: Ensure you have Node.js installed. Download it from Node.js official website.
+Ngrok: Install Ngrok from Ngrok official website.
+Git: Ensure Git is installed. Download it from Git official website.
+
+## Setting up the repository
+```
+git clone https://github.com/SampadSikder/EnsembleLocator 
+cd EnsembleLocator
+cd script
+npm install
+cd ../frontend/findyourbug
+npm install
+```
+
+## Connecting with Github
+
+- Install and start ngrok:
+```
+ngrok http 8080
+```
+- Copy the provided URL (example: https://<random_string>.ngrok.io)
+- Update the backend script's .env file with the following:
+```
+WEBHOOK_URL=<Your Ngrok URL>
+```
+
+## Configure Github API
+- Create a Personal Access Token
+- Add the following in the env file:
+```
+CLIENT_ID=<Your GitHub Client ID>
+CLIENT_SECRET=<Your GitHub Client Secret>
+GITHUB_TOKEN=<Your GitHub Personal Access Token>
+```
+
+
+## Setting up LLM-Based Fusion (Optional)
+
+- Obtain LLM Key from Gemini API Documentation
+- Add to env:
+  ```
+  GEMINI_API_KEY=<Your Gemini API Key>
+  ```
+- Obtain Langchain key from LangSmith API Documentation
+- Add to env:
+  ```
+  LANGSMITH_API_KEY=<Your LangSmith API Key>
+  ```
+
+## Project Workflow
+
+- Start the backend:
+  ```
+npm start
+  ```
+- Start the frontend:
+  ```
+npm run dev
+  ```
+
+This starts the project on http://localhost:5137. Backend runs on http://localhost:8080.
